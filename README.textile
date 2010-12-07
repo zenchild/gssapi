@@ -1,0 +1,4 @@
+h1. Ruby GSSAPI Library
+
+This is a FFI wrapper around the system GSSAPI library.  Further documentation is forthcoming.
+
