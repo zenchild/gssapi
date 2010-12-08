@@ -18,3 +18,5 @@
 # with GSSAPI.  If not, see <http://www.gnu.org/licenses/>.
 #############################################################################
 require 'gssapi/gssapi'
+
+require 'wrappers/krb5_client'
