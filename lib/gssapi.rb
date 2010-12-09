@@ -17,6 +17,6 @@
 # You should have received a copy of the GNU General Public License along
 # with GSSAPI.  If not, see <http://www.gnu.org/licenses/>.
 #############################################################################
-require 'gssapi/gssapi'
+require 'gssapi/lib_gssapi'
 
-require 'wrappers/krb5_client'
+require 'mechs/krb5_client'
