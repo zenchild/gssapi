@@ -28,8 +28,8 @@ GEMSPEC = Gem::Specification.new do |gem|
   gem.rdoc_options	= %w(-x test/ -x examples/)
   gem.extra_rdoc_files = %w(README.textile COPYING.txt)
 
-  gem.required_ruby_version	= '>= 1.8.7'
-  gem.add_runtime_dependency  'ffi', '>= 1.0.0'
+  gem.required_ruby_version	= '>= 1.9.1'
+  gem.add_runtime_dependency  'ffi', '>= 1.0.1'
 end
  
 Rake::GemPackageTask.new(GEMSPEC) do |pkg|
