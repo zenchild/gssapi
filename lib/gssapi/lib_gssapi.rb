@@ -41,17 +41,6 @@ module GSSAPI
               :value  => :pointer # pointer of :void
     end
 
-    # @example
-    #   iov_buff = GssIOVBufferDesc.new
-    #   str = FFI::MemoryPointer.from_string("This is the string")
-    #   iov_buff[:type] = 1
-    #   iov_buff[:buffer][:length] = str.size
-    #   iov_buff[:buffer][:value] = str
-    class GssIOVBufferDesc < FFI::Struct
-      layout  :type   => :OM_uint32,
-              :buffer => GssBufferDesc
-    end
-    
     class MGssBufferDesc < FFI::ManagedStruct
       layout  :length => :size_t,
               :value  => :pointer # pointer of :void
@@ -63,6 +52,17 @@ module GSSAPI
       end
     end
 
+    # @example
+    #   iov_buff = GssIOVBufferDesc.new
+    #   str = FFI::MemoryPointer.from_string("This is the string")
+    #   iov_buff[:type] = 1
+    #   iov_buff[:buffer][:length] = str.size
+    #   iov_buff[:buffer][:value] = str
+    class GssIOVBufferDesc < FFI::Struct
+      layout  :type   => :OM_uint32,
+              :buffer => GssBufferDesc
+    end
+    
     class GssChannelBindingsStruct < FFI::Struct
       layout  :initiator_addrtype => :OM_uint32,
               :initiator_address  => GssBufferDesc,
@@ -71,9 +71,26 @@ module GSSAPI
               :application_data   => GssBufferDesc
     end
 
+    class GssPointer < FFI::AutoPointer
+      def address_of
+        ptr_p = FFI::MemoryPointer.new :pointer
+        ptr_p.write_pointer(self)
+      end
+
+      def self.release(ptr)
+        if( ptr.address == 0 )
+          puts "NULL POINTER: Not freeing"
+          return
+        else
+          puts "Releasing #{self.name}"
+          self.release_ptr(ptr)
+        end
+      end
+    end
+
     # A wrapper around gss_name_t so that it garbage collects
-    class GssNameT < FFI::AutoPointer
-      def self.release(name_ptr)
+    class GssNameT < GssPointer
+      def self.release_ptr(name_ptr)
         puts "Releasing gss_name_t at #{name_ptr.address}" if $DEBUG
         min_stat = FFI::MemoryPointer.new :uint32
         maj_stat = LibGSSAPI.gss_release_name(min_stat, name_ptr)
@@ -81,21 +98,26 @@ module GSSAPI
     end
 
     # A wrapper around gss_buffer_t so that it garbage collects
-    class GssBufferT < FFI::AutoPointer
-      def self.release(buffer_ptr)
+    class GssBufferT < GssPointer
+      def self.release_ptr(buffer_ptr)
         puts "Releasing gss_buffer_t at #{buffer_ptr.address}" if $DEBUG
         min_stat = FFI::MemoryPointer.new :uint32
         maj_stat = LibGSSAPI.gss_release_buffer(min_stat, buffer_ptr)
       end
     end
 
-    class GssCtxIdT < FFI::AutoPointer
-      def self.release(context_ptr)
+    class GssCtxIdT < GssPointer
+      def self.release_ptr(context_ptr)
         min_stat = FFI::MemoryPointer.new :uint32
         empty_buff = LibGSSAPI::GssBufferDesc.new
         empty_buff[:length] = 0
         empty_buff[:value] = nil
         maj_stat = LibGSSAPI.gss_delete_sec_context(min_stat, context_ptr, empty_buff.pointer)
+      end
+
+      def self.gss_c_no_context
+        no_ctx  = GSSAPI::LibGSSAPI::GSS_C_NO_CREDENTIAL # GSS_C_NO_CONTEXT
+        self.new(GSSAPI::LibGSSAPI::GSS_C_NO_CREDENTIAL)
       end
     end
 
@@ -159,10 +181,13 @@ module GSSAPI
     # Remember to free the allocated output_message_buffer with gss_release_buffer
     attach_function :gss_wrap, [:pointer, :pointer, :int, :OM_uint32, :pointer, :pointer, :pointer], :OM_uint32
 
-    # OM_uint32 GSSAPI_LIB_FUNCTION gss_wrap_iov	(	OM_uint32 * minor_status, gss_ctx_id_t 	context_handle,
+    # OM_uint32 GSSAPI_LIB_FUNCTION gss_wrap_iov(	OM_uint32 * minor_status, gss_ctx_id_t 	context_handle,
     #   int conf_req_flag, gss_qop_t 	qop_req, int * 	conf_state, gss_iov_buffer_desc * 	iov, int 	iov_count );
     attach_function :gss_wrap_iov, [:pointer, :pointer, :int, :OM_uint32, :pointer, :pointer, :int], :OM_uint32
 
+    # OM_uint32 gss_wrap_aead(OM_uint32 * minor_status, gss_ctx_id_t context_handle, int conf_req_flag, gss_qop_t qop_req, gss_buffer_t input_assoc_buffer,
+    #  gss_buffer_t input_payload_buffer, int * conf_state, gss_buffer_t output_message_buffer);
+    attach_function :gss_wrap_aead, [:pointer, :pointer, :int, :OM_uint32, :pointer, :pointer, :pointer, :pointer], :OM_uint32
 
     # OM_uint32  gss_unwrap(OM_uint32  *  minor_status, const gss_ctx_id_t context_handle,
     #   const gss_buffer_t input_message_buffer, gss_buffer_t output_message_buffer, int * conf_state, gss_qop_t * qop_state);
@@ -190,6 +215,8 @@ module GSSAPI
     attach_variable :gss_nt_krb5_name, :pointer # type gss_OID
     attach_variable :gss_nt_krb5_principal, :pointer # type gss_OID
     attach_variable :gss_nt_krb5_principal, :pointer # type gss_OID_set
+
+
 
 
 
@@ -252,7 +279,39 @@ module GSSAPI
       (15 << GSS_C_ROUTINE_ERROR_OFFSET) => "GSS_S_UNAUTHORIZED",
       (16 << GSS_C_ROUTINE_ERROR_OFFSET) => "GSS_S_UNAVAILABLE",
       (17 << GSS_C_ROUTINE_ERROR_OFFSET) => "GSS_S_DUPLICATE_ELEMENT",
-      (18 << GSS_C_ROUTINE_ERROR_OFFSET) => "GSS_S_NAME_NOT_MN" }
+      (18 << GSS_C_ROUTINE_ERROR_OFFSET) => "GSS_S_NAME_NOT_MN"
+    }
+
+    # IOV Buffer Types (gssapi_ext.h)
+    GSS_IOV_BUFFER_TYPE_EMPTY       = 0
+    GSS_IOV_BUFFER_TYPE_DATA        = 1	 # Packet data
+    GSS_IOV_BUFFER_TYPE_HEADER      = 2  # Mechanism header
+    GSS_IOV_BUFFER_TYPE_MECH_PARAMS = 3	 # Mechanism specific parameters
+    GSS_IOV_BUFFER_TYPE_TRAILER     = 7	 # Mechanism trailer
+    GSS_IOV_BUFFER_TYPE_PADDING     = 9  # Padding
+    GSS_IOV_BUFFER_TYPE_STREAM      = 10 # Complete wrap token
+    GSS_IOV_BUFFER_TYPE_SIGN_ONLY   = 11 # Sign only packet data
+    # Flags
+    GSS_IOV_BUFFER_FLAG_MASK        = 0xFFFF0000
+    GSS_IOV_BUFFER_FLAG_ALLOCATE    = 0x00010000 # indicates GSS should allocate
+    GSS_IOV_BUFFER_FLAG_ALLOCATED   = 0x00020000 # indicates caller should free
+
+
+
+    # Various Null values. (gssapi.h)
+		GSS_C_NO_NAME           = FFI::Pointer.new(:pointer, 0) # ((gss_name_t) 0)
+		GSS_C_NO_BUFFER         = FFI::Pointer.new(:pointer, 0) # ((gss_buffer_t) 0)
+		GSS_C_NO_OID            = FFI::Pointer.new(:pointer, 0) # ((gss_OID) 0)
+		GSS_C_NO_OID_SET        = FFI::Pointer.new(:pointer, 0) # ((gss_OID_set) 0)
+		GSS_C_NO_CONTEXT        = FFI::Pointer.new(:pointer, 0) # ((gss_ctx_id_t) 0)
+		GSS_C_NO_CREDENTIAL     = FFI::Pointer.new(:pointer, 0) # ((gss_cred_id_t) 0)
+		GSS_C_NO_CHANNEL_BINDINGS = FFI::Pointer.new(:pointer, 0) # ((gss_channel_bindings_t) 0)
+		def self.GSS_C_EMPTY_BUFFER
+      buff = GssBufferDesc.new
+      buff[:length] = 0
+		  buff[:value]  = nil
+      buff
+    end
 
 
   end #end LibGSSAPI
