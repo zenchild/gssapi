@@ -31,9 +31,25 @@ module GSSAPI
               :elements => :pointer # pointer of :void
     end
 
+    # @example
+    #   buff = GssBufferDesc.new
+    #   str = FFI::MemoryPointer.from_string("This is the string")
+    #   buff[:length] = str.size
+    #   buff[:value] = str
     class GssBufferDesc < FFI::Struct
       layout  :length => :size_t,
               :value  => :pointer # pointer of :void
+    end
+
+    # @example
+    #   iov_buff = GssIOVBufferDesc.new
+    #   str = FFI::MemoryPointer.from_string("This is the string")
+    #   iov_buff[:type] = 1
+    #   iov_buff[:buffer][:length] = str.size
+    #   iov_buff[:buffer][:value] = str
+    class GssIOVBufferDesc < FFI::Struct
+      layout  :type   => :OM_uint32,
+              :buffer => GssBufferDesc
     end
     
     class MGssBufferDesc < FFI::ManagedStruct
@@ -142,6 +158,11 @@ module GSSAPI
     #   min_stat = FFI::MemoryPointer.new :uint32
     # Remember to free the allocated output_message_buffer with gss_release_buffer
     attach_function :gss_wrap, [:pointer, :pointer, :int, :OM_uint32, :pointer, :pointer, :pointer], :OM_uint32
+
+    # OM_uint32 GSSAPI_LIB_FUNCTION gss_wrap_iov	(	OM_uint32 * minor_status, gss_ctx_id_t 	context_handle,
+    #   int conf_req_flag, gss_qop_t 	qop_req, int * 	conf_state, gss_iov_buffer_desc * 	iov, int 	iov_count );
+    attach_function :gss_wrap_iov, [:pointer, :pointer, :int, :OM_uint32, :pointer, :pointer, :int], :OM_uint32
+
 
     # OM_uint32  gss_unwrap(OM_uint32  *  minor_status, const gss_ctx_id_t context_handle,
     #   const gss_buffer_t input_message_buffer, gss_buffer_t output_message_buffer, int * conf_state, gss_qop_t * qop_state);
