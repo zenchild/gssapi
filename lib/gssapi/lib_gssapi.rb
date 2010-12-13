@@ -22,7 +22,8 @@ require 'ffi'
 module GSSAPI
   module LibGSSAPI
     extend FFI::Library
-    ffi_lib 'gssapi_krb5'
+    
+    ffi_lib File.basename Dir.glob("/usr/lib/libgssapi*").first
 
     typedef :uint32, :OM_uint32
 
