@@ -1,3 +1,13 @@
+desc "Build the gem"
+task :gem do
+    system "gem build gssapi.gemspec"
+end
+
+desc "Clean the build environment"
+task :clean do
+    system "rm gssapi*.gem"
+end
+
 desc "Increment the version by 1 minor release"
 task :versionup do
 	ver = up_min_version
