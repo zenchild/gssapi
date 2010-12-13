@@ -5,6 +5,8 @@ p. This is a wrapper around the system gssapi library.  It exposes the low-level
 
 h2. Getting Started
 
-```
-require 'gssapi'
-```
+<pre>
+<code>
+  require 'gssapi'
+</code>
+</pre>
