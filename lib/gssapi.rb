@@ -18,5 +18,3 @@
 # with GSSAPI.  If not, see <http://www.gnu.org/licenses/>.
 #############################################################################
 require 'gssapi/lib_gssapi'
-
-require 'mechs/krb5_client'
