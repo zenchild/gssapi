@@ -23,7 +23,17 @@ module GSSAPI
   module LibGSSAPI
     extend FFI::Library
     
-    ffi_lib File.basename Dir.glob("/usr/lib/libgssapi*").first
+    ffi_lib File.basename Dir.glob("/usr/lib/libgssapi*").first, FFI::Library::LIBC
+
+    # Libc functions
+
+    # void *malloc(size_t size);
+    attach_function :malloc, [:size_t], :pointer
+
+    # void *memcpy(void *dest, const void *src, size_t n);
+    attach_function :memcpy, [:pointer, :pointer, :size_t], :pointer
+
+
 
     typedef :uint32, :OM_uint32
 
@@ -32,19 +42,54 @@ module GSSAPI
               :elements => :pointer # pointer of :void
     end
 
-    # @example
-    #   buff = GssBufferDesc.new
-    #   str = FFI::MemoryPointer.from_string("This is the string")
-    #   buff[:length] = str.size
-    #   buff[:value] = str
-    class GssBufferDesc < FFI::Struct
-      layout  :length => :size_t,
-              :value  => :pointer # pointer of :void
+
+    # This is a generic Managed Struct subclass that hides the [] methods.
+    # Classes that implement this class should provide accessor methods to get to the attributes.
+    class GssMStruct < FFI::ManagedStruct
+      private
+
+      def [](key)
+        super(key)
+      end
+
+      def []=(key,val)
+        super(key,val)
+      end
     end
 
-    class MGssBufferDesc < FFI::ManagedStruct
+    # This class implements the gss_buffer_desc type.  Use #pointer to emulate gss_buffer_t
+    # @example
+    #   buff = GssBufferDesc.new
+    #   buff.value = "This is a test"
+    class GssBufferDesc < GssMStruct
       layout  :length => :size_t,
-              :value  => :pointer # pointer of :void
+        :value  => :pointer # pointer of :void
+
+      def initialize(ptr = nil)
+        if(ptr.nil?)
+          super(FFI::Pointer.new(FFI::MemoryPointer.new(self.size)))
+        else
+          super(ptr)
+        end
+      end
+
+      # Set the value of the string for the "value" parameter.  This method also
+      #   appropriately sets the length parameter.
+      def value=(val)
+        rbuff = FFI::MemoryPointer.from_string(val)
+        buff = LibGSSAPI.malloc(rbuff.size)
+        LibGSSAPI.memcpy(buff,rbuff,rbuff.size)
+        self[:length] = rbuff.size
+        self[:value] = buff
+      end
+
+      def length
+        self[:length]
+      end
+
+      def value
+        self[:value]
+      end
 
       def self.release(ptr)
         puts "Releasing MGssBufferDesc at #{ptr.address}"
@@ -72,6 +117,8 @@ module GSSAPI
               :application_data   => GssBufferDesc
     end
 
+    # This s a generic AutoPointer.  Gss pointers that implement this class should also implement a
+    #   class method called release_ptr that releases the structure pointed to by this pointer.
     class GssPointer < FFI::AutoPointer
       def address_of
         ptr_p = FFI::MemoryPointer.new :pointer
@@ -99,6 +146,7 @@ module GSSAPI
     end
 
     # A wrapper around gss_buffer_t so that it garbage collects
+    # TODO: see if we still need this now that GssBufferDesc is a ManagedStruct
     class GssBufferT < GssPointer
       def self.release_ptr(buffer_ptr)
         puts "Releasing gss_buffer_t at #{buffer_ptr.address}" if $DEBUG
@@ -216,8 +264,6 @@ module GSSAPI
     attach_variable :gss_nt_krb5_name, :pointer # type gss_OID
     attach_variable :gss_nt_krb5_principal, :pointer # type gss_OID
     attach_variable :gss_nt_krb5_principal, :pointer # type gss_OID_set
-
-
 
 
 
