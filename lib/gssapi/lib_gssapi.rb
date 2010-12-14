@@ -76,11 +76,16 @@ module GSSAPI
       # Set the value of the string for the "value" parameter.  This method also
       #   appropriately sets the length parameter.
       def value=(val)
-        rbuff = FFI::MemoryPointer.from_string(val)
-        buff = LibGSSAPI.malloc(rbuff.size)
-        LibGSSAPI.memcpy(buff,rbuff,rbuff.size)
-        self[:length] = rbuff.size
-        self[:value] = buff
+        if(val.nil?)
+          self[:length] = 0
+          self[:value] = val
+        else
+          rbuff = FFI::MemoryPointer.from_string(val)
+          buff = LibGSSAPI.malloc(rbuff.size)
+          LibGSSAPI.memcpy(buff,rbuff,rbuff.size)
+          self[:length] = val.length
+          self[:value] = buff
+        end
       end
 
       def length
@@ -88,7 +93,11 @@ module GSSAPI
       end
 
       def value
-        self[:value]
+        if(self[:length] == 0)
+          nil
+        else
+          self[:value].read_string(self[:length])
+        end
       end
 
       def self.release(ptr)
@@ -216,12 +225,20 @@ module GSSAPI
     #   oid = GSSAPI::LibGSSAPI::GssOID.new(oid.get_pointer(0))
     attach_function :gss_str_to_oid, [:pointer, :pointer, :pointer], :OM_uint32
 
-
     # OM_uint32  gss_init_sec_context(OM_uint32  *  minor_status, const gss_cred_id_t initiator_cred_handle,
     #   gss_ctx_id_t * context_handle, const gss_name_t target_name, const gss_OID mech_type, OM_uint32 req_flags,
     #   OM_uint32 time_req, const gss_channel_bindings_t input_chan_bindings, const gss_buffer_t input_token,
     #   gss_OID * actual_mech_type, gss_buffer_t output_token, OM_uint32 * ret_flags, OM_uint32 * time_rec);
     attach_function :gss_init_sec_context, [:pointer, :pointer, :pointer, :pointer, :pointer, :OM_uint32, :OM_uint32, :pointer, :pointer, :pointer, :pointer, :pointer, :pointer], :OM_uint32
+
+    # OM_uint32 gss_accept_sec_context(OM_uint32 *minor_status, gss_ctx_id_t *context_handle, const gss_cred_id_t acceptor_cred_handle,
+    #   const gss_buffer_t input_token_buffer, const gss_channel_bindings_t input_chan_bindings, gss_name_t *src_name, gss_OID *mech_type,
+    #   gss_buffer_t output_token, OM_uint32 *ret_flags, OM_uint32 *time_rec, gss_cred_id_t *delegated_cred_handle);
+    attach_function :gss_accept_sec_context, [:pointer, :pointer, :pointer, :pointer, :pointer, :pointer, :pointer, :pointer, :pointer, :pointer, :pointer], :OM_uint32
+
+    # OM_uint32 gss_acquire_cred(OM_uint32 *minor_status, const gss_name_t desired_name, OM_uint32 time_req, const gss_OID_set desired_mechs,
+    #   gss_cred_usage_t cred_usage, gss_cred_id_t *output_cred_handle, gss_OID_set *actual_mechs, OM_uint32 *time_rec);
+    attach_function :gss_acquire_cred, [:pointer, :pointer, :OM_uint32, :pointer, :pointer, :pointer, :pointer, :pointer], :OM_uint32
 
     # OM_uint32  gss_wrap(OM_uint32  *  minor_status, const gss_ctx_id_t context_handle, int conf_req_flag,
     #   gss_qop_t qop_req, const gss_buffer_t input_message_buffer, int * conf_state, gss_buffer_t output_message_buffer);
@@ -280,6 +297,9 @@ module GSSAPI
     GSS_C_DELEG_POLICY_FLAG = 32768
 
 
+    # Misc Constants
+    GSS_C_INDEFINITE = 0xffffffff # Expiration time of 2^32-1 seconds means infinite lifetime for sec or cred context
+
     # Message Offsets
     GSS_C_CALLING_ERROR_OFFSET = 24
     GSS_C_ROUTINE_ERROR_OFFSET = 16
@@ -293,8 +313,14 @@ module GSSAPI
     GSS_C_QOP_DEFAULT       = 0
 
 
-    # GSSAPI Status Codes
+    # GSSAPI Status & Error Codes
     GSS_S_COMPLETE = 0
+
+    GSS_C_CALLING_ERRORS = {
+      (1 << GSS_C_CALLING_ERROR_OFFSET) => "GSS_S_CALL_INACCESSIBLE_READ",
+      (2 << GSS_C_CALLING_ERROR_OFFSET) => "GSS_S_CALL_INACCESSIBLE_WRITE",
+      (3 << GSS_C_CALLING_ERROR_OFFSET) => "GSS_S_CALL_BAD_STRUCTURE"
+    }
 
     GSS_C_SUPPLEMENTARY_CODES = {
 			(1 << (GSS_C_SUPPLEMENTARY_OFFSET + 0)) => "GSS_S_CONTINUE_NEEDED",
@@ -304,10 +330,6 @@ module GSSAPI
 			(1 << (GSS_C_SUPPLEMENTARY_OFFSET + 4)) => "GSS_S_GAP_TOKEN"
     }
 
-
-    # GSSAPI Error contants
-    #
-    # Routine Errors
     GSS_C_ROUTINE_ERRORS = {
       (1 << GSS_C_ROUTINE_ERROR_OFFSET) => "GSS_S_BAD_MECH",
       (2 << GSS_C_ROUTINE_ERROR_OFFSET) => "GSS_S_BAD_NAME",
@@ -328,6 +350,7 @@ module GSSAPI
       (17 << GSS_C_ROUTINE_ERROR_OFFSET) => "GSS_S_DUPLICATE_ELEMENT",
       (18 << GSS_C_ROUTINE_ERROR_OFFSET) => "GSS_S_NAME_NOT_MN"
     }
+
 
     # IOV Buffer Types (gssapi_ext.h)
     GSS_IOV_BUFFER_TYPE_EMPTY       = 0

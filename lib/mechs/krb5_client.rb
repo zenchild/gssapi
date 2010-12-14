@@ -36,9 +36,7 @@ module GSSAPI
       def import_name
         buff_str = LibGSSAPI::GssBufferDesc.new
         host_str = "host@#{@host_name}"
-        buff_str[:length] = host_str.length
-        buff_val = FFI::MemoryPointer.from_string(host_str) # assign to var so it isn't garbage collected
-        buff_str[:value] = buff_val
+        buff_str.value = host_str
         name = FFI::MemoryPointer.new :pointer # gss_name_t
         min_stat = FFI::MemoryPointer.new :uint32
 
@@ -58,12 +56,9 @@ module GSSAPI
         no_chn_bind.write_int 0
 
         input_token = LibGSSAPI::GssBufferDesc.new
-        input_token[:length] = 0
-        input_token[:value] = nil
-        #output_token = FFI::MemoryPointer.new(16)
+        input_token.value = nil
         output_token = LibGSSAPI::GssBufferDesc.new
-        output_token[:length] = 0
-        output_token[:value] = nil
+        output_token.value = nil
 
         mech = LibGSSAPI.gss_mech_krb5
         maj_stat = LibGSSAPI.gss_init_sec_context(min_stat,
@@ -83,10 +78,10 @@ module GSSAPI
         if(maj_stat == 0 || maj_stat == 1)
           #LibGSSAPI::GssBufferT.new(output_token.pointer)
           @context = ctx.get_pointer(0)
+        else
+          puts LibGSSAPI::GSS_C_ROUTINE_ERRORS[maj_stat]
         end
 
-        puts "releasing..."
-        maj_stat = LibGSSAPI.gss_release_buffer(min_stat, output_token.pointer)
         puts maj_stat
       end
 
