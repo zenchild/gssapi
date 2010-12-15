@@ -34,12 +34,15 @@ module GSSAPI
     attach_function :memcpy, [:pointer, :pointer, :size_t], :pointer
 
 
-
     typedef :uint32, :OM_uint32
 
     class GssOID < FFI::Struct
       layout  :length   =>  :OM_uint32,
-              :elements => :pointer # pointer of :void
+        :elements => :pointer # pointer of :void
+
+      def self.gss_c_no_oid
+        self.new(GSSAPI::LibGSSAPI::GSS_C_NO_OID)
+      end
     end
 
 
@@ -79,12 +82,20 @@ module GSSAPI
         if(val.nil?)
           self[:length] = 0
           self[:value] = val
-        else
+        elsif(val.is_a?(String))
           rbuff = FFI::MemoryPointer.from_string(val)
           buff = LibGSSAPI.malloc(rbuff.size)
           LibGSSAPI.memcpy(buff,rbuff,rbuff.size)
           self[:length] = val.length
           self[:value] = buff
+        elsif(val.is_a?(Fixnum))
+          rbuff = FFI::MemoryPointer.new :uint32
+          buff = LibGSSAPI.malloc(rbuff.size)
+          LibGSSAPI.memcpy(buff,rbuff,rbuff.size)
+          self[:length] = val.to_s.length
+          self[:value] = val
+        else
+          raise StandardError, "Can't handle type #{val.class.name}"
         end
       end
 
@@ -124,6 +135,11 @@ module GSSAPI
               :acceptor_addrtype  => :OM_uint32,
               :acceptor_address   => GssBufferDesc,
               :application_data   => GssBufferDesc
+
+      no_chn_bind = FFI::MemoryPointer.new :pointer  #
+    no_chn_bind.write_int 0
+
+
     end
 
     # This s a generic AutoPointer.  Gss pointers that implement this class should also implement a
@@ -154,16 +170,6 @@ module GSSAPI
       end
     end
 
-    # A wrapper around gss_buffer_t so that it garbage collects
-    # TODO: see if we still need this now that GssBufferDesc is a ManagedStruct
-    class GssBufferT < GssPointer
-      def self.release_ptr(buffer_ptr)
-        puts "Releasing gss_buffer_t at #{buffer_ptr.address}" if $DEBUG
-        min_stat = FFI::MemoryPointer.new :uint32
-        maj_stat = LibGSSAPI.gss_release_buffer(min_stat, buffer_ptr)
-      end
-    end
-
     class GssCtxIdT < GssPointer
       def self.release_ptr(context_ptr)
         min_stat = FFI::MemoryPointer.new :uint32
@@ -174,8 +180,15 @@ module GSSAPI
       end
 
       def self.gss_c_no_context
-        no_ctx  = GSSAPI::LibGSSAPI::GSS_C_NO_CREDENTIAL # GSS_C_NO_CONTEXT
-        self.new(GSSAPI::LibGSSAPI::GSS_C_NO_CREDENTIAL)
+        self.new(GSSAPI::LibGSSAPI::GSS_C_NO_CONTEXT)
+      end
+    end
+
+    # gss_cred_id_t
+    class GssCredIdT < GssPointer
+      def self.release_ptr(cred_ptr)
+        min_stat = FFI::MemoryPointer.new :uint32
+        maj_stat = LibGSSAPI.gss_release_cred(min_stat, cred_ptr)
       end
     end
 
@@ -238,7 +251,7 @@ module GSSAPI
 
     # OM_uint32 gss_acquire_cred(OM_uint32 *minor_status, const gss_name_t desired_name, OM_uint32 time_req, const gss_OID_set desired_mechs,
     #   gss_cred_usage_t cred_usage, gss_cred_id_t *output_cred_handle, gss_OID_set *actual_mechs, OM_uint32 *time_rec);
-    attach_function :gss_acquire_cred, [:pointer, :pointer, :OM_uint32, :pointer, :pointer, :pointer, :pointer, :pointer], :OM_uint32
+    attach_function :gss_acquire_cred, [:pointer, :pointer, :OM_uint32, :pointer, :OM_uint32, :pointer, :pointer, :pointer], :OM_uint32
 
     # OM_uint32  gss_wrap(OM_uint32  *  minor_status, const gss_ctx_id_t context_handle, int conf_req_flag,
     #   gss_qop_t qop_req, const gss_buffer_t input_message_buffer, int * conf_state, gss_buffer_t output_message_buffer);
@@ -271,6 +284,14 @@ module GSSAPI
     # OM_uint32 gss_release_buffer(OM_uint32 * minor_status, gss_buffer_t buffer);
     attach_function :gss_release_buffer, [:pointer, :pointer], :OM_uint32
 
+    # OM_uint32 gss_release_cred(OM_uint32 *minor_status, gss_cred_id_t *cred_handle);
+    attach_function :gss_release_cred, [:pointer, :pointer], :OM_uint32
+
+    # Used to register alternate keytabs
+    # OM_uint32 krb5_gss_register_acceptor_identity(const char *);
+    attach_function :krb5_gss_register_acceptor_identity, [:string], :OM_uint32
+
+
     # Variable definitions
     # --------------------
 
@@ -296,6 +317,11 @@ module GSSAPI
     GSS_C_TRANS_FLAG        = 256
     GSS_C_DELEG_POLICY_FLAG = 32768
 
+
+    # Credential usage options
+    GSS_C_BOTH      = 0
+    GSS_C_INITIATE  = 1
+    GSS_C_ACCEPT    = 2
 
     # Misc Constants
     GSS_C_INDEFINITE = 0xffffffff # Expiration time of 2^32-1 seconds means infinite lifetime for sec or cred context
@@ -376,12 +402,7 @@ module GSSAPI
 		GSS_C_NO_CONTEXT        = FFI::Pointer.new(:pointer, 0) # ((gss_ctx_id_t) 0)
 		GSS_C_NO_CREDENTIAL     = FFI::Pointer.new(:pointer, 0) # ((gss_cred_id_t) 0)
 		GSS_C_NO_CHANNEL_BINDINGS = FFI::Pointer.new(:pointer, 0) # ((gss_channel_bindings_t) 0)
-		def self.GSS_C_EMPTY_BUFFER
-      buff = GssBufferDesc.new
-      buff[:length] = 0
-		  buff[:value]  = nil
-      buff
-    end
+    GSS_C_EMPTY_BUFFER      = GssBufferDesc.new
 
 
   end #end LibGSSAPI
