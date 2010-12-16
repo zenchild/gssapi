@@ -164,8 +164,6 @@ module GSSAPI
       out_buff.value = nil
       maj_stat = GSSAPI::LibGSSAPI.gss_wrap(min_stat, @context, conf_req, qop_req, in_buff.pointer, conf_state, out_buff.pointer)
       raise GssApiError, "Failed to gss_wrap message. Error code: maj: #{maj_stat}, min: #{min_stat.read_int}" if maj_stat != 0
-      puts "MAJ: #{maj_stat}, MIN: #{min_stat.read_int}"
-      puts "CONF: #{conf_state.read_int}"
       out_buff.value
     end
 

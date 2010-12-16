@@ -112,7 +112,7 @@ module GSSAPI
       end
 
       def self.release(ptr)
-        puts "Releasing MGssBufferDesc at #{ptr.address}"
+        puts "Releasing MGssBufferDesc at #{ptr.address}" if $DEBUG
         min_stat = FFI::MemoryPointer.new :uint32
         maj_stat = LibGSSAPI.gss_release_buffer(min_stat, ptr)
       end
@@ -152,10 +152,10 @@ module GSSAPI
 
       def self.release(ptr)
         if( ptr.address == 0 )
-          puts "NULL POINTER: Not freeing"
+          puts "NULL POINTER: Not freeing" if $DEBUG
           return
         else
-          puts "Releasing #{self.name}"
+          puts "Releasing #{self.name}" if $DEBUG
           self.release_ptr(ptr)
         end
       end
