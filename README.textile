@@ -9,9 +9,8 @@ p. Most people will probably be using GSSAPI with Kerberos in a fairly standard 
 
 
 h3. Example Authentication using GSSAPI::Simple
-<pre>
 <code>
-  $: << 'lib'
+<pre>
   require 'httpclient'
   require 'base64'
   require 'gssapi'
@@ -27,5 +26,5 @@ h3. Example Authentication using GSSAPI::Simple
   resp = cli.get(uri, nil, ext_head)
   itok = resp.header["WWW-Authenticate"].pop.split(/\s+/).last
   gsscli.init_context(Base64.strict_decode64(itok))
-</code>
 </pre>
+</code>
