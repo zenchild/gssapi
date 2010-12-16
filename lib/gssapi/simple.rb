@@ -18,6 +18,9 @@
 # with GSSAPI.  If not, see <http://www.gnu.org/licenses/>.
 #############################################################################
 module GSSAPI
+
+  # This class is a simple wrapper around the most common usage of GSSAPI. If you are looking at doing
+  #   something a bit more advanced you may want to check out the LibGSSAPI module.
   class Simple
 
     # Initialize a new GSSAPI::Simple object
@@ -58,10 +61,10 @@ module GSSAPI
       min_stat = FFI::MemoryPointer.new :uint32
       ctx = (@context.nil? ? LibGSSAPI::GssCtxIdT.gss_c_no_context.address_of : @context.address_of)
       mech = LibGSSAPI::GssOID.gss_c_no_oid
-      input_token = LibGSSAPI::GssBufferDesc.new
-      input_token.value = in_token
-      output_token = LibGSSAPI::GssBufferDesc.new
-      output_token.value = nil
+      in_tok = LibGSSAPI::GssBufferDesc.new
+      in_tok.value = in_token
+      out_tok = LibGSSAPI::GssBufferDesc.new
+      out_tok.value = nil
 
 
       maj_stat = LibGSSAPI.gss_init_sec_context(min_stat,
@@ -72,16 +75,16 @@ module GSSAPI
                                                 (LibGSSAPI::GSS_C_MUTUAL_FLAG | LibGSSAPI::GSS_C_SEQUENCE_FLAG),
                                                 0,
                                                 nil,
-                                                input_token.pointer,
+                                                in_tok.pointer,
                                                 nil,
-                                                output_token.pointer,
+                                                out_tok.pointer,
                                                 nil,
                                                 nil)
 
       raise GssApiError, "gss_init_sec_context did not return GSS_S_COMPLETE.  Error code: maj: #{maj_stat}, min: #{min_stat.read_int}" if maj_stat > 1
       
       @context = LibGSSAPI::GssCtxIdT.new(ctx.get_pointer(0))
-      maj_stat == 1 ? output_token.value : true
+      maj_stat == 1 ? out_tok.value : true
     end
 
 
@@ -100,6 +103,7 @@ module GSSAPI
       in_tok = GSSAPI::LibGSSAPI::GssBufferDesc.new
       in_tok.value = in_token
       out_tok = GSSAPI::LibGSSAPI::GssBufferDesc.new
+      out_tok.value = nil
       maj_stat = LibGSSAPI.gss_accept_sec_context(min_stat,
                                                   ctx,
                                                   @scred,
@@ -112,7 +116,8 @@ module GSSAPI
 
       raise GssApiError, "gss_accept_sec_context did not return GSS_S_COMPLETE.  Error code: maj: #{maj_stat}, min: #{min_stat.read_int}" if maj_stat > 1
 
-      out_tok.value
+      @context = LibGSSAPI::GssCtxIdT.new(ctx.get_pointer(0))
+      out_tok.length > 0 ? out_tok.value : true
     end
 
 
@@ -142,6 +147,43 @@ module GSSAPI
 
       @scred = LibGSSAPI::GssCredIdT.new(scred.get_pointer(0))
       true
+    end
+
+    # Wrap a message using gss_wrap. It can either encrypt the message (confidentiality) or simply sign it (integrity).
+    # @param [String] msg The message to wrap
+    # @param [Boolean] encrypt Whether or not to encrypt the message or just sign it.  The default is to encrypt.
+    # @return [String] The wrapped message. It will raise an exception on error
+    def wrap_message(msg, encrypt = true)
+      min_stat = FFI::MemoryPointer.new :uint32
+      conf_req = (encrypt ? 1 : 0)
+      qop_req = GSSAPI::LibGSSAPI::GSS_C_QOP_DEFAULT
+      in_buff = GSSAPI::LibGSSAPI::GssBufferDesc.new
+      in_buff.value = msg
+      conf_state = FFI::MemoryPointer.new :uint32
+      out_buff = GSSAPI::LibGSSAPI::GssBufferDesc.new
+      out_buff.value = nil
+      maj_stat = GSSAPI::LibGSSAPI.gss_wrap(min_stat, @context, conf_req, qop_req, in_buff.pointer, conf_state, out_buff.pointer)
+      raise GssApiError, "Failed to gss_wrap message. Error code: maj: #{maj_stat}, min: #{min_stat.read_int}" if maj_stat != 0
+      puts "MAJ: #{maj_stat}, MIN: #{min_stat.read_int}"
+      puts "CONF: #{conf_state.read_int}"
+      out_buff.value
+    end
+
+    # Unwrap a message previously wrapped with gss_wrap.
+    # @param [String] msg The message to unwrap
+    # @param [Boolean] encrypted Whether or not this message was encrypted (true) or just signed (false)
+    def unwrap_message(msg, encrypted = true)
+      min_stat = FFI::MemoryPointer.new :uint32
+      in_buff = GSSAPI::LibGSSAPI::GssBufferDesc.new
+      in_buff.value = msg
+      out_buff = GSSAPI::LibGSSAPI::GssBufferDesc.new
+      conf_state = FFI::MemoryPointer.new :int
+      conf_state.write_int((encrypted ? 1 : 0))
+      q_op = FFI::MemoryPointer.new :uint32
+      q_op.write_int(0)
+      maj_stat = GSSAPI::LibGSSAPI.gss_unwrap(min_stat, @context, in_buff.pointer, out_buff.pointer, conf_state, q_op)
+      raise GssApiError, "Failed to gss_unwrap message. Error code: maj: #{maj_stat}, min: #{min_stat.read_int}" if maj_stat != 0
+      out_buff.value
     end
 
     # Add a path to a custom keytab file
