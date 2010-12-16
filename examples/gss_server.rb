@@ -1,20 +1,32 @@
 require 'gssapi'
 require 'base64'
+require 'socket'
+
 
 host = 'example.org'
 service  = 'host'
-keytab = 'path/to/keytab' # this is optional, but probably required if not running as root
+keytab = "#{ENV['HOME']}/.gssapi/krb5.keytab"  # this is optional, but probably required if not running as root
+
+tcpsrv = TCPServer.new(host, 8082)
 
 srv = GSSAPI::Simple.new(host, service, keytab)
 srv.acquire_credentials
 
-# receive token
-stok = ""
-tok = Base64.strict_decode64(stok)
-otok = srv.accept_context(tok)
-stok = Base64.strict_encode64(otok)
+loop do
+  Thread.start(tcpsrv.accept) do |s|
+    print(s, "Accepted Connection\n")
+    stok = s.gets.chomp
+    print(s, "Received string#{stok}\n")
+    otok = srv.accept_context(Base64.strict_decode64(stok.chomp))
+    s.write("#{Base64.strict_encode64(otok)}\n")
 
-# receive Wrapped msg
-emsg = ""
-msg = Base64.strict_decode64(emsg)
-srv.unwrap_message(msg)
+    begin
+      emsg = s.gets.chomp
+      msg = srv.unwrap_message(Base64.strict_decode64(emsg.chomp))
+      puts "Received: #{msg}"
+    end while msg != 'exit'
+
+    print(s, "Closing Socket\n")
+    s.close
+  end
+end
