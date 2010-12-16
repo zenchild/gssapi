@@ -1,12 +1,31 @@
 h1. Ruby GSSAPI Library
 
-p. This is a wrapper around the system gssapi library.  It exposes the low-level gssapi methods like gss_init_sec_context and gss_wrap and also provides an easier to use wrapper on top of this for common usage scenarios.
+p. This is a wrapper around the system GSSAPI library.  It exposes the low-level GSSAPI methods like gss_init_sec_context and gss_wrap and also provides an easier to use wrapper on top of this for common usage scenarios.
 
 
 h2. Getting Started
 
+p. Most people will probably be using GSSAPI with Kerberos in a fairly standard way.  There is a class called GSSAPI::Simple that provides a simple interface for writing clients and servers for both authentication and message integrity/confidentiality.
+
+
+h3. Example Authentication using GSSAPI::Simple
 <pre>
 <code>
+  $: << 'lib'
+  require 'httpclient'
+  require 'base64'
   require 'gssapi'
+  uri = URI.parse "https://example.org/ews/Services.wsdl" # MS Exchange Web Services
+  service = 'HTTP'
+
+  cli = HTTPClient.new
+
+  gsscli = GSSAPI::Simple.new(uri.host, service)
+  token = gsscli.init_context
+  
+  ext_head = {"Authorization" => "Negotiate #{Base64.strict_encode64(token)}"}
+  resp = cli.get(uri, nil, ext_head)
+  itok = resp.header["WWW-Authenticate"].pop.split(/\s+/).last
+  gsscli.init_context(Base64.strict_decode64(itok))
 </code>
 </pre>

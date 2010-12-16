@@ -18,6 +18,9 @@ Gem::Specification.new do |gem|
   gem.description	= <<-EOF
     A FFI wrapper around the system GSSAPI library. Please make sure and read the
     Yard docs or standard GSSAPI documentation if you have any questions.
+    
+    There is also a class called GSSAPI::Simple that wraps many of the common features
+    used for GSSAPI.
   EOF
 
   gem.files = `git ls-files`.split(/\n/)
