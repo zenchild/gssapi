@@ -54,13 +54,24 @@ module GSSAPI
 
     # Initialize the GSS security context (client initiator).  If there was a previous call that issued a
     #   continue you can pass the continuation token in via the token param.
+    #   If no flags are set the default flags are LibGSSAPI::GSS_C_MUTUAL_FLAG | LibGSSAPI::GSS_C_SEQUENCE_FLAG
     # @param [String] in_token an input token sent from the remote service in a continuation.
+    # @param [Hash] opts misc opts to be set
+    # @option opts [Fixnum] :flags override all other flags.  If you set the :delegate option this option will override it.
+    #   @see http://tools.ietf.org/html/rfc4121#section-4.1.1.1
+    # @option opts [Boolean] :delegate if true set the credential delegate flag
     # @return [String, true] if a continuation flag is set it will return the output token that is needed to send
     #   to the remote host.  Otherwise it returns true and the GSS security context has been established.
-    def init_context(in_token = nil)
+    def init_context(in_token = nil, opts = {})
       min_stat = FFI::MemoryPointer.new :uint32
       ctx = (@context.nil? ? LibGSSAPI::GssCtxIdT.gss_c_no_context.address_of : @context.address_of)
       mech = LibGSSAPI::GssOID.gss_c_no_oid
+      if(opts[:flags])
+        flags = opts[:flags]
+      else
+        flags = (LibGSSAPI::GSS_C_MUTUAL_FLAG | LibGSSAPI::GSS_C_SEQUENCE_FLAG)
+        flags |= LibGSSAPI::GSS_C_DELEG_FLAG  if opts[:delegate]
+      end
       in_tok = LibGSSAPI::GssBufferDesc.new
       in_tok.value = in_token
       out_tok = LibGSSAPI::GssBufferDesc.new
@@ -72,7 +83,7 @@ module GSSAPI
                                                 ctx,
                                                 @int_svc_name,
                                                 mech,
-                                                (LibGSSAPI::GSS_C_MUTUAL_FLAG | LibGSSAPI::GSS_C_SEQUENCE_FLAG),
+                                                flags,
                                                 0,
                                                 nil,
                                                 in_tok.pointer,
