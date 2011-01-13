@@ -23,7 +23,16 @@ module GSSAPI
   module LibGSSAPI
     extend FFI::Library
     
-    ffi_lib File.basename Dir.glob("/usr/lib/libgssapi*").first, FFI::Library::LIBC
+    case RUBY_PLATFORM
+    when /linux/
+      # Some Ubuntu ship only with libgssapi_krb5, hence this hackery.
+      ffi_lib File.basename Dir.glob("/usr/lib/libgssapi*").sort.first, FFI::Library::LIBC
+    when /win/
+      ffi_lib 'gssapi32'  # Required the MIT Kerberos libraries to be installed
+      ffi_convention :stdcall
+    else
+      raise LoadError, "This platform (#{RUBY_PLATFORM}) is not supported by ruby gssapi."
+    end
 
     # Libc functions
 
@@ -225,6 +234,7 @@ module GSSAPI
     #   oidstr[:value].read_string
     attach_function :gss_oid_to_str, [:pointer, :pointer, :pointer], :OM_uint32
 
+    # TODO: Missing from Heimdal
     # OM_uint32 gss_str_to_oid(OM_uint32 *minor_status, const gss_buffer_t oid_str, gss_OID *oid);
     # @example: Simulate GSS_C_NT_HOSTBASED_SERVICE
     #   min_stat = FFI::MemoryPointer.new :uint32
@@ -236,7 +246,7 @@ module GSSAPI
     #   min_stat = FFI::MemoryPointer.new :uint32
     #   maj_stat = GSSAPI::LibGSSAPI.gss_str_to_oid(min_stat, oidstr.pointer, oid)
     #   oid = GSSAPI::LibGSSAPI::GssOID.new(oid.get_pointer(0))
-    attach_function :gss_str_to_oid, [:pointer, :pointer, :pointer], :OM_uint32
+    #attach_function :gss_str_to_oid, [:pointer, :pointer, :pointer], :OM_uint32
 
     # OM_uint32  gss_init_sec_context(OM_uint32  *  minor_status, const gss_cred_id_t initiator_cred_handle,
     #   gss_ctx_id_t * context_handle, const gss_name_t target_name, const gss_OID mech_type, OM_uint32 req_flags,
@@ -264,9 +274,10 @@ module GSSAPI
     #   int conf_req_flag, gss_qop_t 	qop_req, int * 	conf_state, gss_iov_buffer_desc * 	iov, int 	iov_count );
     attach_function :gss_wrap_iov, [:pointer, :pointer, :int, :OM_uint32, :pointer, :pointer, :int], :OM_uint32
 
+    # TODO: Missing from Heimdal
     # OM_uint32 gss_wrap_aead(OM_uint32 * minor_status, gss_ctx_id_t context_handle, int conf_req_flag, gss_qop_t qop_req, gss_buffer_t input_assoc_buffer,
     #  gss_buffer_t input_payload_buffer, int * conf_state, gss_buffer_t output_message_buffer);
-    attach_function :gss_wrap_aead, [:pointer, :pointer, :int, :OM_uint32, :pointer, :pointer, :pointer, :pointer], :OM_uint32
+    #attach_function :gss_wrap_aead, [:pointer, :pointer, :int, :OM_uint32, :pointer, :pointer, :pointer, :pointer], :OM_uint32
 
     # OM_uint32  gss_unwrap(OM_uint32  *  minor_status, const gss_ctx_id_t context_handle,
     #   const gss_buffer_t input_message_buffer, gss_buffer_t output_message_buffer, int * conf_state, gss_qop_t * qop_state);
@@ -297,13 +308,6 @@ module GSSAPI
 
     attach_variable :GSS_C_NT_HOSTBASED_SERVICE, :pointer # type gss_OID
     attach_variable :GSS_C_NT_EXPORT_NAME, :pointer # type gss_OID
-    attach_variable :gss_mech_krb5, :pointer # type gss_OID
-    attach_variable :gss_mech_set_krb5, :pointer # type gss_OID_set
-    attach_variable :gss_nt_krb5_name, :pointer # type gss_OID
-    attach_variable :gss_nt_krb5_principal, :pointer # type gss_OID
-    attach_variable :gss_nt_krb5_principal, :pointer # type gss_OID_set
-
-
 
     # Flag bits for context-level services.
     GSS_C_DELEG_FLAG        = 1
