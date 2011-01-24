@@ -71,11 +71,13 @@ module GSSAPI
       else
         flags = (LibGSSAPI::GSS_C_MUTUAL_FLAG | LibGSSAPI::GSS_C_SEQUENCE_FLAG)
         flags |= LibGSSAPI::GSS_C_DELEG_FLAG  if opts[:delegate]
+        flags |= LibGSSAPI::GSS_C_DELEG_POLICY_FLAG  if opts[:delegate]
       end
       in_tok = LibGSSAPI::GssBufferDesc.new
       in_tok.value = in_token
       out_tok = LibGSSAPI::GssBufferDesc.new
       out_tok.value = nil
+      ret_flags = FFI::MemoryPointer.new :uint32
 
 
       maj_stat = LibGSSAPI.gss_init_sec_context(min_stat,
@@ -89,7 +91,7 @@ module GSSAPI
                                                 in_tok.pointer,
                                                 nil,
                                                 out_tok.pointer,
-                                                nil,
+                                                ret_flags,
                                                 nil)
 
       raise GssApiError, "gss_init_sec_context did not return GSS_S_COMPLETE.  Error code: maj: #{maj_stat}, min: #{min_stat.read_int}" if maj_stat > 1
@@ -114,7 +116,9 @@ module GSSAPI
       in_tok = GSSAPI::LibGSSAPI::GssBufferDesc.new
       in_tok.value = in_token
       out_tok = GSSAPI::LibGSSAPI::GssBufferDesc.new
-      out_tok.value = nil
+      out_tok.value = nil 
+      ret_flags = FFI::MemoryPointer.new :uint32
+
       maj_stat = LibGSSAPI.gss_accept_sec_context(min_stat,
                                                   ctx,
                                                   @scred,
@@ -123,7 +127,8 @@ module GSSAPI
                                                   client,
                                                   mech,
                                                   out_tok.pointer,
-                                                  nil, nil, nil)
+                                                  ret_flags,
+                                                  nil, nil)
 
       raise GssApiError, "gss_accept_sec_context did not return GSS_S_COMPLETE.  Error code: maj: #{maj_stat}, min: #{min_stat.read_int}" if maj_stat > 1
 

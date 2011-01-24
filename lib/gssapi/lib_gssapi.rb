@@ -274,6 +274,10 @@ module GSSAPI
     #   int conf_req_flag, gss_qop_t 	qop_req, int * 	conf_state, gss_iov_buffer_desc * 	iov, int 	iov_count );
     attach_function :gss_wrap_iov, [:pointer, :pointer, :int, :OM_uint32, :pointer, :pointer, :int], :OM_uint32
 
+    # OM_uint32 GSSAPI_LIB_FUNCTION gss_unwrap_iov ( OM_uint32 * minor_status, gss_ctx_id_t context_handle,
+    #   int * conf_state, gss_qop_t * qop_state, gss_iov_buffer_desc * iov, int iov_count )
+    attach_function :gss_unwrap_iov, [:pointer, :pointer, :pointer, :pointer, :pointer, :int], :OM_uint32
+
     # TODO: Missing from Heimdal
     # OM_uint32 gss_wrap_aead(OM_uint32 * minor_status, gss_ctx_id_t context_handle, int conf_req_flag, gss_qop_t qop_req, gss_buffer_t input_assoc_buffer,
     #  gss_buffer_t input_payload_buffer, int * conf_state, gss_buffer_t output_message_buffer);
