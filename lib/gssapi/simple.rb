@@ -43,10 +43,11 @@ module GSSAPI
     def import_name(str)
       buff_str = LibGSSAPI::GssBufferDesc.new
       buff_str.value = str
+      mech = LibGSSAPI::GssOID.gss_c_no_oid
       name = FFI::MemoryPointer.new :pointer # gss_name_t
       min_stat = FFI::MemoryPointer.new :uint32
 
-      maj_stat = LibGSSAPI.gss_import_name(min_stat, buff_str.pointer, LibGSSAPI.GSS_C_NT_HOSTBASED_SERVICE, name)
+      maj_stat = LibGSSAPI.gss_import_name(min_stat, buff_str.pointer, mech, name)
       raise GssApiError, "gss_import_name did not return GSS_S_COMPLETE.  Error code: maj: #{maj_stat}, min: #{min_stat.read_int}" if maj_stat != 0
 
       LibGSSAPI::GssNameT.new(name.get_pointer(0))
