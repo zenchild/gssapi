@@ -23,6 +23,8 @@ module GSSAPI
   #   something a bit more advanced you may want to check out the LibGSSAPI module.
   class Simple
 
+    attr_reader :context
+
     # Initialize a new GSSAPI::Simple object
     # @param [String] host_name the fully qualified host name
     # @param [String] service_name the service name. This can either be in the form svc@example.org 
@@ -44,6 +46,7 @@ module GSSAPI
       buff_str = LibGSSAPI::GssBufferDesc.new
       buff_str.value = str
       mech = LibGSSAPI::GssOID.gss_c_no_oid
+      #mech = LibGSSAPI.GSS_C_NT_HOSTBASED_SERVICE
       name = FFI::MemoryPointer.new :pointer # gss_name_t
       min_stat = FFI::MemoryPointer.new :uint32
 
@@ -140,26 +143,26 @@ module GSSAPI
 
     # Acquire security credentials. This does not log you in. It grabs the credentials from a cred cache or keytab.
     # @param [Hash] opts options to pass to the gss_acquire_cred function.
-    # @option opts [String] :usage The credential usage type ('accept', 'initiate', 'both').  It defaults to 'accept' since
+    # @option opts [String] :usage The credential usage type (:accept, :initiate, :both).  It defaults to 'accept' since
     #   this method is most usually called on the server only.
     # @return [true] It will return true if everything succeeds and the @scred variable will be set for future methods. If
     #   an error ocurrs an exception will be raised.
-    def acquire_credentials(opts = {:usage => 'accept'})
+    def acquire_credentials(princ = @int_svc_name, opts = {:usage => :accept})
       min_stat = FFI::MemoryPointer.new :uint32
       scred = FFI::MemoryPointer.new :pointer
 
       case opts[:usage]
-      when 'accept'
+      when :accept
         usage = LibGSSAPI::GSS_C_ACCEPT
-      when 'initiate'
+      when :initiate
         usage = LibGSSAPI::GSS_C_INITIATE
-      when 'both'
+      when :both
         usage = LibGSSAPI::GSS_C_BOTH
       else
         raise GssApiError, "Bad option passed to #{self.class.name}#acquire_credentials"
       end
 
-      maj_stat = LibGSSAPI.gss_acquire_cred(min_stat, @int_svc_name, 0, LibGSSAPI::GSS_C_NO_OID_SET, usage, scred, nil, nil)
+      maj_stat = LibGSSAPI.gss_acquire_cred(min_stat, princ, 0, LibGSSAPI::GSS_C_NO_OID_SET, usage, scred, nil, nil)
       raise GssApiError, "gss_acquire_cred did not return GSS_S_COMPLETE.  Error code: maj: #{maj_stat}, min: #{min_stat.read_int}" if maj_stat != 0
 
       @scred = LibGSSAPI::GssCredIdT.new(scred.get_pointer(0))
