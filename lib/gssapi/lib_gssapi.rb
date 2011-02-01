@@ -26,7 +26,8 @@ module GSSAPI
     case RUBY_PLATFORM
     when /linux/
       # Some Ubuntu ship only with libgssapi_krb5, hence this hackery.
-      ffi_lib File.basename Dir.glob("/usr/lib/libgssapi*").sort.first, FFI::Library::LIBC
+      # MIT is the only supported GSSAPI/Kerberos library at this time.
+      ffi_lib File.basename Dir.glob("/usr/lib/libgssapi_*").sort.first, FFI::Library::LIBC
     when /darwin/
       ffi_lib '/usr/lib/libgssapi_krb5.dylib', FFI::Library::LIBC
     when /win/
