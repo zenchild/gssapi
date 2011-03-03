@@ -105,7 +105,7 @@ module GSSAPI
           buff = LibGSSAPI.malloc(rbuff.size)
           LibGSSAPI.memcpy(buff,rbuff,rbuff.size)
           self[:length] = val.to_s.length
-          self[:value] = val
+          self[:value] = buff
         else
           raise StandardError, "Can't handle type #{val.class.name}"
         end
