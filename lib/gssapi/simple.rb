@@ -43,7 +43,7 @@ module GSSAPI
     # Convert a String to a GSSAPI usable buffer (gss_buffer_desc)
     # @param [String] str the string to convert
     def import_name(str)
-      buff_str = LibGSSAPI::GssBufferDesc.new
+      buff_str = LibGSSAPI::UnManagedGssBufferDesc.new
       buff_str.value = str
       mech = LibGSSAPI::GssOID.gss_c_no_oid
       #mech = LibGSSAPI.GSS_C_NT_HOSTBASED_SERVICE
@@ -77,10 +77,9 @@ module GSSAPI
         flags |= LibGSSAPI::GSS_C_DELEG_FLAG  if opts[:delegate]
         flags |= LibGSSAPI::GSS_C_DELEG_POLICY_FLAG  if opts[:delegate]
       end
-      in_tok = LibGSSAPI::GssBufferDesc.new
+      in_tok = LibGSSAPI::UnManagedGssBufferDesc.new
       in_tok.value = in_token
-      out_tok = LibGSSAPI::GssBufferDesc.new
-      out_tok.value = nil
+      out_tok = LibGSSAPI::ManagedGssBufferDesc.new
       ret_flags = FFI::MemoryPointer.new :uint32
 
 
@@ -117,10 +116,9 @@ module GSSAPI
       no_chn_bind = LibGSSAPI::GSS_C_NO_CHANNEL_BINDINGS
       client = FFI::MemoryPointer.new :pointer  # Will hold the initiating client name after the call
       mech = FFI::MemoryPointer.new :pointer  # Will hold the mech being used after the call
-      in_tok = GSSAPI::LibGSSAPI::GssBufferDesc.new
+      in_tok = GSSAPI::LibGSSAPI::UnManagedGssBufferDesc.new
       in_tok.value = in_token
-      out_tok = GSSAPI::LibGSSAPI::GssBufferDesc.new
-      out_tok.value = nil 
+      out_tok = GSSAPI::LibGSSAPI::ManagedGssBufferDesc.new
       ret_flags = FFI::MemoryPointer.new :uint32
 
       maj_stat = LibGSSAPI.gss_accept_sec_context(min_stat,
@@ -177,11 +175,10 @@ module GSSAPI
       min_stat = FFI::MemoryPointer.new :uint32
       conf_req = (encrypt ? 1 : 0)
       qop_req = GSSAPI::LibGSSAPI::GSS_C_QOP_DEFAULT
-      in_buff = GSSAPI::LibGSSAPI::GssBufferDesc.new
+      in_buff = GSSAPI::LibGSSAPI::UnManagedGssBufferDesc.new
       in_buff.value = msg
       conf_state = FFI::MemoryPointer.new :uint32
-      out_buff = GSSAPI::LibGSSAPI::GssBufferDesc.new
-      out_buff.value = nil
+      out_buff = GSSAPI::LibGSSAPI::ManagedGssBufferDesc.new
       maj_stat = GSSAPI::LibGSSAPI.gss_wrap(min_stat, @context, conf_req, qop_req, in_buff.pointer, conf_state, out_buff.pointer)
       raise GssApiError, "Failed to gss_wrap message. Error code: maj: #{maj_stat}, min: #{min_stat.read_int}" if maj_stat != 0
       out_buff.value
@@ -192,9 +189,9 @@ module GSSAPI
     # @param [Boolean] encrypted Whether or not this message was encrypted (true) or just signed (false)
     def unwrap_message(msg, encrypted = true)
       min_stat = FFI::MemoryPointer.new :uint32
-      in_buff = GSSAPI::LibGSSAPI::GssBufferDesc.new
+      in_buff = GSSAPI::LibGSSAPI::UnManagedGssBufferDesc.new
       in_buff.value = msg
-      out_buff = GSSAPI::LibGSSAPI::GssBufferDesc.new
+      out_buff = GSSAPI::LibGSSAPI::ManagedGssBufferDesc.new
       conf_state = FFI::MemoryPointer.new :int
       conf_state.write_int((encrypted ? 1 : 0))
       q_op = FFI::MemoryPointer.new :uint32

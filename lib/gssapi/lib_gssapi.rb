@@ -48,6 +48,7 @@ module GSSAPI
 
     typedef :uint32, :OM_uint32
 
+
     class GssOID < FFI::Struct
       layout  :length   =>  :OM_uint32,
         :elements => :pointer # pointer of :void
@@ -56,7 +57,6 @@ module GSSAPI
         self.new(GSSAPI::LibGSSAPI::GSS_C_NO_OID)
       end
     end
-
 
     # This is a generic Managed Struct subclass that hides the [] methods.
     # Classes that implement this class should provide accessor methods to get to the attributes.
@@ -72,14 +72,53 @@ module GSSAPI
       end
     end
 
-    # This class implements the gss_buffer_desc type.  Use #pointer to emulate gss_buffer_t
-    # @example
-    #   buff = GssBufferDesc.new
-    #   buff.value = "This is a test"
-    class GssBufferDesc < GssMStruct
-      layout  :length => :size_t,
-        :value  => :pointer # pointer of :void
+    # This is a generic Unmanaged Struct subclass that hides the [] methods.
+    # Classes that implement this class should provide accessor methods to get to the attributes.
+    class GssUMStruct < FFI::Struct
+      private
 
+      def [](key)
+        super(key)
+      end
+
+      def []=(key,val)
+        super(key,val)
+      end
+    end
+
+    # This module provides a layout for both the managed and unmanaged GssBufferDesc structs.
+    module GssBufferDescLayout
+      def self.included(base)
+        base.class_eval do
+          layout :length => :size_t,
+            :value  => :pointer # pointer of :void
+
+          def length
+            self[:length]
+          end
+
+          def value
+            if(self[:length] == 0)
+              nil
+            else
+              self[:value].read_string(self[:length])
+            end
+          end
+        end
+      end
+    end
+
+    # This class implements the gss_buffer_desc type.  Use #pointer to emulate gss_buffer_t
+    # If you are setting the value of the buffer and it is not being set from the function
+    # this is the type of buffer you should use. If the buffer is being allocated and set
+    # inside the function you should use a ManagedGssBufferDesc instead so gss_release_buffer
+    # is called for it. It states in the manpage for each gss function whether or not
+    # gss_release_buffer needs to be called or not.
+    # @example
+    #   buff = UnManagedGssBufferDesc.new
+    #   buff.value = "This is a test"
+    class UnManagedGssBufferDesc < GssUMStruct
+      include GssBufferDescLayout
       def initialize(ptr = nil)
         if(ptr.nil?)
           super(FFI::Pointer.new(FFI::MemoryPointer.new(self.size)))
@@ -95,41 +134,38 @@ module GSSAPI
           self[:length] = 0
           self[:value] = val
         elsif(val.is_a?(String))
-          rbuff = FFI::MemoryPointer.from_string(val)
-          buff = LibGSSAPI.malloc(rbuff.size)
-          LibGSSAPI.memcpy(buff,rbuff,rbuff.size)
+          buff = FFI::MemoryPointer.from_string(val)
           self[:length] = val.length
           self[:value] = buff
         elsif(val.is_a?(Fixnum))
-          rbuff = FFI::MemoryPointer.new :uint32
-          buff = LibGSSAPI.malloc(rbuff.size)
-          LibGSSAPI.memcpy(buff,rbuff,rbuff.size)
+          buff = FFI::MemoryPointer.new :uint32
+          buff.write_int val
           self[:length] = val.to_s.length
           self[:value] = buff
         else
           raise StandardError, "Can't handle type #{val.class.name}"
         end
       end
+    end
 
-      def length
-        self[:length]
-      end
-
-      def value
-        if(self[:length] == 0)
-          nil
+    # This class implements the gss_buffer_desc type.  Use #pointer to emulate gss_buffer_t
+    # Only functions that need to call gss_release_buffer should use this type. It states
+    # in the manpage for each function whether or not it should be called. If it does not
+    # you should be using UnManagedGssBufferDesc instead.
+    class ManagedGssBufferDesc < GssMStruct
+      include GssBufferDescLayout
+      def initialize(ptr = nil)
+        if(ptr.nil?)
+          super(FFI::Pointer.new(FFI::MemoryPointer.new(self.size)))
         else
-          self[:value].read_string(self[:length])
+          super(ptr)
         end
       end
 
       def self.release(ptr)
-        puts "FIXME: Not Releasing MGssBufferDesc at #{ptr.address.to_s(16)}" if $DEBUG
-        #min_stat = FFI::MemoryPointer.new :uint32
-        # FIXME: This causes Segfaults and I'm not sure where they're coming from at this time.
-        #   this is a horrible fix, but most instances should be fairly short lived so it's all
-        #   I got right now.
-        #maj_stat = LibGSSAPI.gss_release_buffer(min_stat, ptr)
+        puts "Releasing ManagedGssBufferDesc at #{ptr.address.to_s(16)}" if $DEBUG
+        min_stat = FFI::MemoryPointer.new :uint32
+        maj_stat = LibGSSAPI.gss_release_buffer(min_stat, ptr)
       end
     end
 
@@ -141,20 +177,18 @@ module GSSAPI
     #   iov_buff[:buffer][:value] = str
     class GssIOVBufferDesc < FFI::Struct
       layout  :type   => :OM_uint32,
-              :buffer => GssBufferDesc
+              :buffer => UnManagedGssBufferDesc
     end
-    
+
     class GssChannelBindingsStruct < FFI::Struct
       layout  :initiator_addrtype => :OM_uint32,
-              :initiator_address  => GssBufferDesc,
-              :acceptor_addrtype  => :OM_uint32,
-              :acceptor_address   => GssBufferDesc,
-              :application_data   => GssBufferDesc
+        :initiator_address  => UnManagedGssBufferDesc,
+        :acceptor_addrtype  => :OM_uint32,
+        :acceptor_address   => UnManagedGssBufferDesc,
+        :application_data   => UnManagedGssBufferDesc
 
       no_chn_bind = FFI::MemoryPointer.new :pointer  #
-    no_chn_bind.write_int 0
-
-
+      no_chn_bind.write_int 0
     end
 
     # This s a generic AutoPointer.  Gss pointers that implement this class should also implement a
@@ -188,7 +222,8 @@ module GSSAPI
     class GssCtxIdT < GssPointer
       def self.release_ptr(context_ptr)
         min_stat = FFI::MemoryPointer.new :uint32
-        empty_buff = LibGSSAPI::GssBufferDesc.new
+        # FIXME: change to GSS_C_NO_BUFFER
+        empty_buff = LibGSSAPI::UnManagedGssBufferDesc.new
         empty_buff[:length] = 0
         empty_buff[:value] = nil
         maj_stat = LibGSSAPI.gss_delete_sec_context(min_stat, context_ptr, empty_buff.pointer)
@@ -216,7 +251,7 @@ module GSSAPI
     # OM_uint32 gss_import_name(OM_uint32 * minor_status, const gss_buffer_t input_name_buffer, const gss_OID input_name_type, gss_name_t * output_name);
     # @example:
     #   host_str = 'host@example.com'
-    #   buff_str = GSSAPI::LibGSSAPI::GssBufferDesc.new
+    #   buff_str = GSSAPI::LibGSSAPI::UnManagedGssBufferDesc.new
     #   buff_str[:length] = host_str.length
     #   buff_str[:value] = FFI::MemoryPointer.from_string(host_str)
     #   name = FFI::MemoryPointer.new :pointer # gss_name_t
@@ -235,7 +270,7 @@ module GSSAPI
     # OM_uint32 gss_oid_to_str(OM_uint32 *minor_status, const gss_OID oid, gss_buffer_t oid_str);
     # @example:
     #   min_stat = FFI::MemoryPointer.new :uint32
-    #   oidstr = GSSAPI::LibGSSAPI::GssBufferDesc.new
+    #   oidstr = GSSAPI::LibGSSAPI::ManagedGssBufferDesc.new
     #   maj_stat = GSSAPI::LibGSSAPI.gss_oid_to_str(min_stat, GSSAPI::LibGSSAPI.GSS_C_NT_HOSTBASED_SERVICE, oidstr.pointer)
     #   oidstr[:value].read_string
     attach_function :gss_oid_to_str, [:pointer, :pointer, :pointer], :OM_uint32
@@ -245,7 +280,7 @@ module GSSAPI
     # @example: Simulate GSS_C_NT_HOSTBASED_SERVICE
     #   min_stat = FFI::MemoryPointer.new :uint32
     #   str = "{ 1 2 840 113554 1 2 1 4 }"
-    #   oidstr = GSSAPI::LibGSSAPI::GssBufferDesc.new
+    #   oidstr = GSSAPI::LibGSSAPI::UnManagedGssBufferDesc.new
     #   oidstr[:length] = str.length
     #   oidstr[:value] = FFI::MemoryPointer.from_string str
     #   oid = FFI::MemoryPointer.new :pointer
@@ -419,8 +454,7 @@ module GSSAPI
 		GSS_C_NO_CONTEXT        = FFI::Pointer.new(:pointer, 0) # ((gss_ctx_id_t) 0)
 		GSS_C_NO_CREDENTIAL     = FFI::Pointer.new(:pointer, 0) # ((gss_cred_id_t) 0)
 		GSS_C_NO_CHANNEL_BINDINGS = FFI::Pointer.new(:pointer, 0) # ((gss_channel_bindings_t) 0)
-    GSS_C_EMPTY_BUFFER      = GssBufferDesc.new
-
+    GSS_C_EMPTY_BUFFER      = ManagedGssBufferDesc.new
 
   end #end LibGSSAPI
 end #end GSSAPI
