@@ -124,7 +124,7 @@ module GSSAPI
       end
 
       def self.release(ptr)
-        puts "Releasing MGssBufferDesc at #{ptr.address}" if $DEBUG
+        puts "Releasing MGssBufferDesc at #{ptr.address.to_s(16)}" if $DEBUG
         min_stat = FFI::MemoryPointer.new :uint32
         maj_stat = LibGSSAPI.gss_release_buffer(min_stat, ptr)
       end
@@ -167,7 +167,7 @@ module GSSAPI
           puts "NULL POINTER: Not freeing" if $DEBUG
           return
         else
-          puts "Releasing #{self.name}" if $DEBUG
+          puts "Releasing #{self.name} at #{ptr.address.to_s(16)}" if $DEBUG
           self.release_ptr(ptr)
         end
       end
@@ -176,7 +176,7 @@ module GSSAPI
     # A wrapper around gss_name_t so that it garbage collects
     class GssNameT < GssPointer
       def self.release_ptr(name_ptr)
-        puts "Releasing gss_name_t at #{name_ptr.address}" if $DEBUG
+        puts "Releasing gss_name_t at #{name_ptr.address.to_s(16)}" if $DEBUG
         min_stat = FFI::MemoryPointer.new :uint32
         maj_stat = LibGSSAPI.gss_release_name(min_stat, name_ptr)
       end
