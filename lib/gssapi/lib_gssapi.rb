@@ -124,9 +124,12 @@ module GSSAPI
       end
 
       def self.release(ptr)
-        puts "Releasing MGssBufferDesc at #{ptr.address.to_s(16)}" if $DEBUG
-        min_stat = FFI::MemoryPointer.new :uint32
-        maj_stat = LibGSSAPI.gss_release_buffer(min_stat, ptr)
+        puts "FIXME: Not Releasing MGssBufferDesc at #{ptr.address.to_s(16)}" if $DEBUG
+        #min_stat = FFI::MemoryPointer.new :uint32
+        # FIXME: This causes Segfaults and I'm not sure where they're coming from at this time.
+        #   this is a horrible fix, but most instances should be fairly short lived so it's all
+        #   I got right now.
+        #maj_stat = LibGSSAPI.gss_release_buffer(min_stat, ptr)
       end
     end
 
