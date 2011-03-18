@@ -325,7 +325,12 @@ module GSSAPI
     # TODO: Missing from Heimdal
     # OM_uint32 gss_wrap_aead(OM_uint32 * minor_status, gss_ctx_id_t context_handle, int conf_req_flag, gss_qop_t qop_req, gss_buffer_t input_assoc_buffer,
     #  gss_buffer_t input_payload_buffer, int * conf_state, gss_buffer_t output_message_buffer);
-    #attach_function :gss_wrap_aead, [:pointer, :pointer, :int, :OM_uint32, :pointer, :pointer, :pointer, :pointer], :OM_uint32
+    attach_function :gss_wrap_aead, [:pointer, :pointer, :int, :OM_uint32, :pointer, :pointer, :pointer, :pointer], :OM_uint32
+
+    # TODO: Missing from Heimdal
+    # OM_uint32 gss_unwrap_aead(OM_uint32 * /*minor_status*/, gss_ctx_id_t /*context_handle*/, gss_buffer_t /*input_message_buffer*/,
+    #   gss_buffer_t /*input_assoc_buffer*/, gss_buffer_t /*output_payload_buffer*/, int * /*conf_state*/, gss_qop_t * /*qop_state*/);
+    attach_function :gss_unwrap_aead, [:pointer,:pointer,:pointer,:pointer,:pointer,:pointer,:pointer], :OM_uint32
 
     # OM_uint32  gss_unwrap(OM_uint32  *  minor_status, const gss_ctx_id_t context_handle,
     #   const gss_buffer_t input_message_buffer, gss_buffer_t output_message_buffer, int * conf_state, gss_qop_t * qop_state);

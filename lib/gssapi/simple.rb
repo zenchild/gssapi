@@ -73,7 +73,7 @@ module GSSAPI
       if(opts[:flags])
         flags = opts[:flags]
       else
-        flags = (LibGSSAPI::GSS_C_MUTUAL_FLAG | LibGSSAPI::GSS_C_SEQUENCE_FLAG)
+        flags = (LibGSSAPI::GSS_C_MUTUAL_FLAG | LibGSSAPI::GSS_C_SEQUENCE_FLAG | LibGSSAPI::GSS_C_CONF_FLAG | LibGSSAPI::GSS_C_INTEG_FLAG)
         flags |= LibGSSAPI::GSS_C_DELEG_FLAG  if opts[:delegate]
         flags |= LibGSSAPI::GSS_C_DELEG_POLICY_FLAG  if opts[:delegate]
       end
