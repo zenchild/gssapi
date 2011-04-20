@@ -30,7 +30,7 @@ module GSSAPI
       ffi_lib File.basename Dir.glob("/usr/lib/libgssapi_*").sort.first, FFI::Library::LIBC
     when /darwin/
       ffi_lib '/usr/lib/libgssapi_krb5.dylib', FFI::Library::LIBC
-    when /win/
+    when /mswin|mingw32|windows/
       ffi_lib 'gssapi32'  # Required the MIT Kerberos libraries to be installed
       ffi_convention :stdcall
     else
