@@ -22,14 +22,21 @@ require 'ffi'
 module GSSAPI
   module LibGSSAPI
     extend FFI::Library
-    
+
     case RUBY_PLATFORM
     when /linux/
-      # Some Ubuntu ship only with libgssapi_krb5, hence this hackery.
-      # MIT is the only supported GSSAPI/Kerberos library at this time.
-      ffi_lib File.basename Dir.glob("/usr/lib/libgssapi_*").sort.first, FFI::Library::LIBC
+      # try to load Heimdal Kerberos first
+      begin
+        libsuffix = RUBY_PLATFORM =~ /x86_64/ ? '64' : ''
+        ffi_lib "/usr/lib#{libsuffix}/heimdal/libgssapi.so.2", FFI::Library::LIBC
+      rescue
+        # fall back to MIT Kerberos
+        # Some Ubuntu ship only with libgssapi_krb5, hence this hackery.
+        ffi_lib File.basename Dir.glob("/usr/lib/libgssapi_*").sort.first, FFI::Library::LIBC
+      end
     when /darwin/
-      ffi_lib '/usr/lib/libgssapi_krb5.dylib', FFI::Library::LIBC
+      # use Heimdal Kerberos since Mac MIT Kerberos is OLD
+      ffi_lib '/usr/heimdal/lib/libgssapi.dylib', FFI::Library::LIBC
     when /mswin|mingw32|windows/
       ffi_lib 'gssapi32'  # Required the MIT Kerberos libraries to be installed
       ffi_convention :stdcall
@@ -39,11 +46,11 @@ module GSSAPI
 
     # Libc functions
 
-    # void *malloc(size_t size);
-    attach_function :malloc, [:size_t], :pointer
+    # void *malloc(uint32 size);
+    attach_function :malloc, [:uint32], :pointer
 
-    # void *memcpy(void *dest, const void *src, size_t n);
-    attach_function :memcpy, [:pointer, :pointer, :size_t], :pointer
+    # void *memcpy(void *dest, const void *src, uint32 n);
+    attach_function :memcpy, [:pointer, :pointer, :uint32], :pointer
 
 
     typedef :uint32, :OM_uint32
@@ -90,7 +97,7 @@ module GSSAPI
     module GssBufferDescLayout
       def self.included(base)
         base.class_eval do
-          layout :length => :size_t,
+          layout :length => :uint32,
             :value  => :pointer # pointer of :void
 
           def length
@@ -310,22 +317,20 @@ module GSSAPI
     #   min_stat = FFI::MemoryPointer.new :uint32
     # Remember to free the allocated output_message_buffer with gss_release_buffer
     attach_function :gss_wrap, [:pointer, :pointer, :int, :OM_uint32, :pointer, :pointer, :pointer], :OM_uint32
-    
+
     # Mac version of krb5 does not support *_iov
-    unless RUBY_PLATFORM =~ /darwin/
-      # OM_uint32 GSSAPI_LIB_FUNCTION gss_wrap_iov( OM_uint32 * minor_status, gss_ctx_id_t  context_handle,
-      #   int conf_req_flag, gss_qop_t  qop_req, int *  conf_state, gss_iov_buffer_desc *  iov, int  iov_count );
-      attach_function :gss_wrap_iov, [:pointer, :pointer, :int, :OM_uint32, :pointer, :pointer, :int], :OM_uint32
+    # OM_uint32 GSSAPI_LIB_FUNCTION gss_wrap_iov( OM_uint32 * minor_status, gss_ctx_id_t  context_handle,
+    #   int conf_req_flag, gss_qop_t  qop_req, int *  conf_state, gss_iov_buffer_desc *  iov, int  iov_count );
+    attach_function :gss_wrap_iov, [:pointer, :pointer, :int, :OM_uint32, :pointer, :pointer, :int], :OM_uint32
 
-      # OM_uint32 GSSAPI_LIB_FUNCTION gss_unwrap_iov ( OM_uint32 * minor_status, gss_ctx_id_t context_handle,
-      #   int * conf_state, gss_qop_t * qop_state, gss_iov_buffer_desc * iov, int iov_count )
-      attach_function :gss_unwrap_iov, [:pointer, :pointer, :pointer, :pointer, :pointer, :int], :OM_uint32
+    # OM_uint32 GSSAPI_LIB_FUNCTION gss_unwrap_iov ( OM_uint32 * minor_status, gss_ctx_id_t context_handle,
+    #   int * conf_state, gss_qop_t * qop_state, gss_iov_buffer_desc * iov, int iov_count )
+    attach_function :gss_unwrap_iov, [:pointer, :pointer, :pointer, :pointer, :pointer, :int], :OM_uint32
 
-      # OM_uint32 GSSAPI_LIB_CALL gss_wrap_iov_length ( OM_uint32 * minor_status, gss_ctx_id_t context_handle,
-      #   int conf_req_flag, gss_qop_t  qop_req, int *  conf_state, gss_iov_buffer_desc * iov, int iov_count)
-      attach_function :gss_wrap_iov_length, [:pointer, :pointer, :int, :OM_uint32, :pointer, :pointer, :int], :OM_uint32
-    end
-    
+    # OM_uint32 GSSAPI_LIB_CALL gss_wrap_iov_length ( OM_uint32 * minor_status, gss_ctx_id_t context_handle,
+    #   int conf_req_flag, gss_qop_t  qop_req, int *  conf_state, gss_iov_buffer_desc * iov, int iov_count)
+    attach_function :gss_wrap_iov_length, [:pointer, :pointer, :int, :OM_uint32, :pointer, :pointer, :int], :OM_uint32
+
     # TODO: Missing from Heimdal
     # OM_uint32 gss_wrap_aead(OM_uint32 * minor_status, gss_ctx_id_t context_handle, int conf_req_flag, gss_qop_t qop_req, gss_buffer_t input_assoc_buffer,
     #  gss_buffer_t input_payload_buffer, int * conf_state, gss_buffer_t output_message_buffer);
