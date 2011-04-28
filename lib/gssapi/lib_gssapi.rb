@@ -40,10 +40,10 @@ module GSSAPI
     # Libc functions
 
     # void *malloc(size_t size);
-    attach_function :malloc, [:size_t], :pointer
+    attach_function :malloc, [:uint32], :pointer
 
     # void *memcpy(void *dest, const void *src, size_t n);
-    attach_function :memcpy, [:pointer, :pointer, :size_t], :pointer
+    attach_function :memcpy, [:pointer, :pointer, :uint32], :pointer
 
 
     typedef :uint32, :OM_uint32
@@ -138,7 +138,7 @@ module GSSAPI
           self[:length] = val.length
           self[:value] = buff
         elsif(val.is_a?(Fixnum))
-          buff = FFI::MemoryPointer.new :uint32
+          buff = FFI::MemoryPointer.new :OM_uint32
           buff.write_int val
           self[:length] = val.to_s.length
           self[:value] = buff
@@ -164,7 +164,7 @@ module GSSAPI
 
       def self.release(ptr)
         puts "Releasing ManagedGssBufferDesc at #{ptr.address.to_s(16)}" if $DEBUG
-        min_stat = FFI::MemoryPointer.new :uint32
+        min_stat = FFI::MemoryPointer.new :OM_uint32
         maj_stat = LibGSSAPI.gss_release_buffer(min_stat, ptr)
       end
     end
@@ -214,14 +214,14 @@ module GSSAPI
     class GssNameT < GssPointer
       def self.release_ptr(name_ptr)
         puts "Releasing gss_name_t at #{name_ptr.address.to_s(16)}" if $DEBUG
-        min_stat = FFI::MemoryPointer.new :uint32
+        min_stat = FFI::MemoryPointer.new :OM_uint32
         maj_stat = LibGSSAPI.gss_release_name(min_stat, name_ptr)
       end
     end
 
     class GssCtxIdT < GssPointer
       def self.release_ptr(context_ptr)
-        min_stat = FFI::MemoryPointer.new :uint32
+        min_stat = FFI::MemoryPointer.new :OM_uint32
         # FIXME: change to GSS_C_NO_BUFFER
         empty_buff = LibGSSAPI::UnManagedGssBufferDesc.new
         empty_buff[:length] = 0
@@ -237,7 +237,7 @@ module GSSAPI
     # gss_cred_id_t
     class GssCredIdT < GssPointer
       def self.release_ptr(cred_ptr)
-        min_stat = FFI::MemoryPointer.new :uint32
+        min_stat = FFI::MemoryPointer.new :OM_uint32
         maj_stat = LibGSSAPI.gss_release_cred(min_stat, cred_ptr)
       end
     end
@@ -255,7 +255,7 @@ module GSSAPI
     #   buff_str[:length] = host_str.length
     #   buff_str[:value] = FFI::MemoryPointer.from_string(host_str)
     #   name = FFI::MemoryPointer.new :pointer # gss_name_t
-    #   min_stat = FFI::MemoryPointer.new :uint32
+    #   min_stat = FFI::MemoryPointer.new :OM_uint32
     #   maj_stat = GSSAPI::LibGSSAPI.gss_import_name(min_stat, buff_str.pointer, GSSAPI::LibGSSAPI.GSS_C_NT_HOSTBASED_SERVICE, name)
     #   name = name.get_pointer(0)
     # Remember to free the allocated name (gss_name_t) space with gss_release_name
@@ -269,7 +269,7 @@ module GSSAPI
 
     # OM_uint32 gss_oid_to_str(OM_uint32 *minor_status, const gss_OID oid, gss_buffer_t oid_str);
     # @example:
-    #   min_stat = FFI::MemoryPointer.new :uint32
+    #   min_stat = FFI::MemoryPointer.new :OM_uint32
     #   oidstr = GSSAPI::LibGSSAPI::ManagedGssBufferDesc.new
     #   maj_stat = GSSAPI::LibGSSAPI.gss_oid_to_str(min_stat, GSSAPI::LibGSSAPI.GSS_C_NT_HOSTBASED_SERVICE, oidstr.pointer)
     #   oidstr[:value].read_string
@@ -278,13 +278,13 @@ module GSSAPI
     # TODO: Missing from Heimdal
     # OM_uint32 gss_str_to_oid(OM_uint32 *minor_status, const gss_buffer_t oid_str, gss_OID *oid);
     # @example: Simulate GSS_C_NT_HOSTBASED_SERVICE
-    #   min_stat = FFI::MemoryPointer.new :uint32
+    #   min_stat = FFI::MemoryPointer.new :OM_uint32
     #   str = "{ 1 2 840 113554 1 2 1 4 }"
     #   oidstr = GSSAPI::LibGSSAPI::UnManagedGssBufferDesc.new
     #   oidstr[:length] = str.length
     #   oidstr[:value] = FFI::MemoryPointer.from_string str
     #   oid = FFI::MemoryPointer.new :pointer
-    #   min_stat = FFI::MemoryPointer.new :uint32
+    #   min_stat = FFI::MemoryPointer.new :OM_uint32
     #   maj_stat = GSSAPI::LibGSSAPI.gss_str_to_oid(min_stat, oidstr.pointer, oid)
     #   oid = GSSAPI::LibGSSAPI::GssOID.new(oid.get_pointer(0))
     #attach_function :gss_str_to_oid, [:pointer, :pointer, :pointer], :OM_uint32
@@ -307,7 +307,7 @@ module GSSAPI
     # OM_uint32  gss_wrap(OM_uint32  *  minor_status, const gss_ctx_id_t context_handle, int conf_req_flag,
     #   gss_qop_t qop_req, const gss_buffer_t input_message_buffer, int * conf_state, gss_buffer_t output_message_buffer);
     # @example:
-    #   min_stat = FFI::MemoryPointer.new :uint32
+    #   min_stat = FFI::MemoryPointer.new :OM_uint32
     # Remember to free the allocated output_message_buffer with gss_release_buffer
     attach_function :gss_wrap, [:pointer, :pointer, :int, :OM_uint32, :pointer, :pointer, :pointer], :OM_uint32
     
@@ -339,7 +339,7 @@ module GSSAPI
     # OM_uint32  gss_unwrap(OM_uint32  *  minor_status, const gss_ctx_id_t context_handle,
     #   const gss_buffer_t input_message_buffer, gss_buffer_t output_message_buffer, int * conf_state, gss_qop_t * qop_state);
     # @example:
-    #   min_stat = FFI::MemoryPointer.new :uint32
+    #   min_stat = FFI::MemoryPointer.new :OM_uint32
     # Remember to free the allocated output_message_buffer with gss_release_buffer
     attach_function :gss_unwrap, [:pointer, :pointer, :pointer, :pointer, :pointer, :pointer], :OM_uint32
 
