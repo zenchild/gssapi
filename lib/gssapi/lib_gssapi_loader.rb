@@ -28,25 +28,20 @@ module GSSAPI
     when /linux/
       case GSSAPI_LIB_TYPE
       when :mit
-        GSS_LIB_PATH = File.basename(Dir.glob("/usr/lib/libgssapi_*").sort.first)
+        GSSAPI_LIB = 'libgssapi_krb5.so.2'
       when :heimdal
-        %w{/usr/lib/libgssapi.so.2 /usr/lib64/heimdal/libgssapi.so.2 /usr/lib64/heimdal/libgssapi.so.2}.each do |p|
-          if File.exists?(p)
-            GSS_LIB_PATH = p
-            break
-          end
-        end
+        GSSAPI_LIB = 'libgssapi.so.2'
       end
-      ffi_lib GSS_LIB_PATH, FFI::Library::LIBC
+      ffi_lib GSSAPI_LIB, FFI::Library::LIBC
     when /darwin/
       case GSSAPI_LIB_TYPE
       when :mit
-        GSS_LIB_PATH = '/usr/lib/libgssapi_krb5.dylib'
+        GSSAPI_LIB = '/usr/lib/libgssapi_krb5.dylib'
       when :heimdal
         # use Heimdal Kerberos since Mac MIT Kerberos is OLD. Do a "require 'gssapi/heimdal'" first
-        GSS_LIB_PATH = '/usr/heimdal/lib/libgssapi.dylib'
+        GSSAPI_LIB = '/usr/heimdal/lib/libgssapi.dylib'
       end
-      ffi_lib GSS_LIB_PATH, FFI::Library::LIBC
+      ffi_lib GSSAPI_LIB, FFI::Library::LIBC
     when /mswin|mingw32|windows/
       ffi_lib 'gssapi32'  # Required the MIT Kerberos libraries to be installed
       ffi_convention :stdcall
