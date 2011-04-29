@@ -17,25 +17,9 @@
 # You should have received a copy of the GNU General Public License along
 # with GSSAPI.  If not, see <http://www.gnu.org/licenses/>.
 #############################################################################
-require 'ffi'
-
+require 'gssapi/lib_gssapi_loader'
 module GSSAPI
   module LibGSSAPI
-    extend FFI::Library
-    
-    case RUBY_PLATFORM
-    when /linux/
-      # Some Ubuntu ship only with libgssapi_krb5, hence this hackery.
-      # MIT is the only supported GSSAPI/Kerberos library at this time.
-      ffi_lib File.basename Dir.glob("/usr/lib/libgssapi_*").sort.first, FFI::Library::LIBC
-    when /darwin/
-      ffi_lib '/usr/lib/libgssapi_krb5.dylib', FFI::Library::LIBC
-    when /mswin|mingw32|windows/
-      ffi_lib 'gssapi32'  # Required the MIT Kerberos libraries to be installed
-      ffi_convention :stdcall
-    else
-      raise LoadError, "This platform (#{RUBY_PLATFORM}) is not supported by ruby gssapi."
-    end
 
     # Libc functions
 
@@ -45,9 +29,7 @@ module GSSAPI
     # void *memcpy(void *dest, const void *src, size_t n);
     attach_function :memcpy, [:pointer, :pointer, :uint32], :pointer
 
-
     typedef :uint32, :OM_uint32
-
 
     class GssOID < FFI::Struct
       layout  :length   =>  :OM_uint32,
@@ -275,19 +257,22 @@ module GSSAPI
     #   oidstr[:value].read_string
     attach_function :gss_oid_to_str, [:pointer, :pointer, :pointer], :OM_uint32
 
-    # TODO: Missing from Heimdal
-    # OM_uint32 gss_str_to_oid(OM_uint32 *minor_status, const gss_buffer_t oid_str, gss_OID *oid);
-    # @example: Simulate GSS_C_NT_HOSTBASED_SERVICE
-    #   min_stat = FFI::MemoryPointer.new :OM_uint32
-    #   str = "{ 1 2 840 113554 1 2 1 4 }"
-    #   oidstr = GSSAPI::LibGSSAPI::UnManagedGssBufferDesc.new
-    #   oidstr[:length] = str.length
-    #   oidstr[:value] = FFI::MemoryPointer.from_string str
-    #   oid = FFI::MemoryPointer.new :pointer
-    #   min_stat = FFI::MemoryPointer.new :OM_uint32
-    #   maj_stat = GSSAPI::LibGSSAPI.gss_str_to_oid(min_stat, oidstr.pointer, oid)
-    #   oid = GSSAPI::LibGSSAPI::GssOID.new(oid.get_pointer(0))
-    #attach_function :gss_str_to_oid, [:pointer, :pointer, :pointer], :OM_uint32
+    begin
+      # OM_uint32 gss_str_to_oid(OM_uint32 *minor_status, const gss_buffer_t oid_str, gss_OID *oid);
+      # @example: Simulate GSS_C_NT_HOSTBASED_SERVICE
+      #   min_stat = FFI::MemoryPointer.new :OM_uint32
+      #   str = "{ 1 2 840 113554 1 2 1 4 }"
+      #   oidstr = GSSAPI::LibGSSAPI::UnManagedGssBufferDesc.new
+      #   oidstr[:length] = str.length
+      #   oidstr[:value] = FFI::MemoryPointer.from_string str
+      #   oid = FFI::MemoryPointer.new :pointer
+      #   min_stat = FFI::MemoryPointer.new :OM_uint32
+      #   maj_stat = GSSAPI::LibGSSAPI.gss_str_to_oid(min_stat, oidstr.pointer, oid)
+      #   oid = GSSAPI::LibGSSAPI::GssOID.new(oid.get_pointer(0))
+      attach_function :gss_str_to_oid, [:pointer, :pointer, :pointer], :OM_uint32
+    rescue FFI::NotFoundError => ex
+      warn "Could not load gss_str_to_oid method. Check your GSSAPI C library for an update"
+    end
 
     # OM_uint32  gss_init_sec_context(OM_uint32  *  minor_status, const gss_cred_id_t initiator_cred_handle,
     #   gss_ctx_id_t * context_handle, const gss_name_t target_name, const gss_OID mech_type, OM_uint32 req_flags,
@@ -311,8 +296,8 @@ module GSSAPI
     # Remember to free the allocated output_message_buffer with gss_release_buffer
     attach_function :gss_wrap, [:pointer, :pointer, :int, :OM_uint32, :pointer, :pointer, :pointer], :OM_uint32
     
-    # Mac version of krb5 does not support *_iov
-    unless RUBY_PLATFORM =~ /darwin/
+    # Some versions of GSSAPI might not have support for IOV yet.
+    begin
       # OM_uint32 GSSAPI_LIB_FUNCTION gss_wrap_iov( OM_uint32 * minor_status, gss_ctx_id_t  context_handle,
       #   int conf_req_flag, gss_qop_t  qop_req, int *  conf_state, gss_iov_buffer_desc *  iov, int  iov_count );
       attach_function :gss_wrap_iov, [:pointer, :pointer, :int, :OM_uint32, :pointer, :pointer, :int], :OM_uint32
@@ -324,17 +309,22 @@ module GSSAPI
       # OM_uint32 GSSAPI_LIB_CALL gss_wrap_iov_length ( OM_uint32 * minor_status, gss_ctx_id_t context_handle,
       #   int conf_req_flag, gss_qop_t  qop_req, int *  conf_state, gss_iov_buffer_desc * iov, int iov_count)
       attach_function :gss_wrap_iov_length, [:pointer, :pointer, :int, :OM_uint32, :pointer, :pointer, :int], :OM_uint32
+    rescue FFI::NotFoundError => ex
+      warn "Could not load IOV methods. Check your GSSAPI C library for an update"
     end
     
-    # TODO: Missing from Heimdal
-    # OM_uint32 gss_wrap_aead(OM_uint32 * minor_status, gss_ctx_id_t context_handle, int conf_req_flag, gss_qop_t qop_req, gss_buffer_t input_assoc_buffer,
-    #  gss_buffer_t input_payload_buffer, int * conf_state, gss_buffer_t output_message_buffer);
-    #attach_function :gss_wrap_aead, [:pointer, :pointer, :int, :OM_uint32, :pointer, :pointer, :pointer, :pointer], :OM_uint32
+    begin
+      # OM_uint32 gss_wrap_aead(OM_uint32 * minor_status, gss_ctx_id_t context_handle, int conf_req_flag,
+      #   gss_qop_t qop_req, gss_buffer_t input_assoc_buffer,
+      #   gss_buffer_t input_payload_buffer, int * conf_state, gss_buffer_t output_message_buffer);
+      attach_function :gss_wrap_aead, [:pointer, :pointer, :int, :OM_uint32, :pointer, :pointer, :pointer, :pointer], :OM_uint32
 
-    # TODO: Missing from Heimdal
-    # OM_uint32 gss_unwrap_aead(OM_uint32 * /*minor_status*/, gss_ctx_id_t /*context_handle*/, gss_buffer_t /*input_message_buffer*/,
-    #   gss_buffer_t /*input_assoc_buffer*/, gss_buffer_t /*output_payload_buffer*/, int * /*conf_state*/, gss_qop_t * /*qop_state*/);
-    #attach_function :gss_unwrap_aead, [:pointer,:pointer,:pointer,:pointer,:pointer,:pointer,:pointer], :OM_uint32
+      # OM_uint32 gss_unwrap_aead(OM_uint32 * minor_status, gss_ctx_id_t context_handle, gss_buffer_t input_message_buffer,
+      #   gss_buffer_t input_assoc_buffer, gss_buffer_t output_payload_buffer, int * conf_state, gss_qop_t * qop_state);
+      attach_function :gss_unwrap_aead, [:pointer,:pointer,:pointer,:pointer,:pointer,:pointer,:pointer], :OM_uint32
+    rescue FFI::NotFoundError => ex
+      warn "Could not load AEAD methods. Check your GSSAPI C library for an update"
+    end
 
     # OM_uint32  gss_unwrap(OM_uint32  *  minor_status, const gss_ctx_id_t context_handle,
     #   const gss_buffer_t input_message_buffer, gss_buffer_t output_message_buffer, int * conf_state, gss_qop_t * qop_state);

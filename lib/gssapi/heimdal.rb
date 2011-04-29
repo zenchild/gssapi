@@ -17,15 +17,8 @@
 # You should have received a copy of the GNU General Public License along
 # with GSSAPI.  If not, see <http://www.gnu.org/licenses/>.
 #############################################################################
-require 'ffi'
 module GSSAPI
   module LibGSSAPI
-    extend FFI::Library
-
-    GSSAPI_LIB_TYPE = :mit unless defined?(GSSAPI_LIB_TYPE)
+    GSSAPI_LIB_TYPE = :heimdal
   end
 end
-
-require 'gssapi/exceptions'
-require 'gssapi/lib_gssapi'
-require 'gssapi/simple'
