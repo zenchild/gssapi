@@ -271,7 +271,7 @@ module GSSAPI
       #   oid = GSSAPI::LibGSSAPI::GssOID.new(oid.get_pointer(0))
       attach_function :gss_str_to_oid, [:pointer, :pointer, :pointer], :OM_uint32
     rescue FFI::NotFoundError => ex
-      warn "Could not load gss_str_to_oid method. Check your GSSAPI C library for an update"
+      warn "WARNING: Could not load gss_str_to_oid method. Check your GSSAPI C library for an update"
     end
 
     # OM_uint32  gss_init_sec_context(OM_uint32  *  minor_status, const gss_cred_id_t initiator_cred_handle,
@@ -310,7 +310,7 @@ module GSSAPI
       #   int conf_req_flag, gss_qop_t  qop_req, int *  conf_state, gss_iov_buffer_desc * iov, int iov_count)
       attach_function :gss_wrap_iov_length, [:pointer, :pointer, :int, :OM_uint32, :pointer, :pointer, :int], :OM_uint32
     rescue FFI::NotFoundError => ex
-      warn "Could not load IOV methods. Check your GSSAPI C library for an update"
+      warn "WARNING: Could not load IOV methods. Check your GSSAPI C library for an update"
     end
     
     begin
@@ -323,7 +323,7 @@ module GSSAPI
       #   gss_buffer_t input_assoc_buffer, gss_buffer_t output_payload_buffer, int * conf_state, gss_qop_t * qop_state);
       attach_function :gss_unwrap_aead, [:pointer,:pointer,:pointer,:pointer,:pointer,:pointer,:pointer], :OM_uint32
     rescue FFI::NotFoundError => ex
-      warn "Could not load AEAD methods. Check your GSSAPI C library for an update"
+      warn "WARNING: Could not load AEAD methods. Check your GSSAPI C library for an update"
     end
 
     # OM_uint32  gss_unwrap(OM_uint32  *  minor_status, const gss_ctx_id_t context_handle,
