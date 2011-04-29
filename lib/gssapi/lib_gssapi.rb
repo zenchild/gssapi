@@ -249,15 +249,15 @@ module GSSAPI
     # OM_uint32 gss_canonicalize_name(OM_uint32 * minor_status, const gss_name_t input_name, const gss_OID mech_type, gss_name_t * output_name)
     attach_function :gss_canonicalize_name, [:pointer, :pointer, :pointer, :pointer], :OM_uint32
 
-    # OM_uint32 gss_oid_to_str(OM_uint32 *minor_status, const gss_OID oid, gss_buffer_t oid_str);
-    # @example:
-    #   min_stat = FFI::MemoryPointer.new :OM_uint32
-    #   oidstr = GSSAPI::LibGSSAPI::ManagedGssBufferDesc.new
-    #   maj_stat = GSSAPI::LibGSSAPI.gss_oid_to_str(min_stat, GSSAPI::LibGSSAPI.GSS_C_NT_HOSTBASED_SERVICE, oidstr.pointer)
-    #   oidstr[:value].read_string
-    attach_function :gss_oid_to_str, [:pointer, :pointer, :pointer], :OM_uint32
-
     begin
+      # OM_uint32 gss_oid_to_str(OM_uint32 *minor_status, const gss_OID oid, gss_buffer_t oid_str);
+      # @example:
+      #   min_stat = FFI::MemoryPointer.new :OM_uint32
+      #   oidstr = GSSAPI::LibGSSAPI::ManagedGssBufferDesc.new
+      #   maj_stat = GSSAPI::LibGSSAPI.gss_oid_to_str(min_stat, GSSAPI::LibGSSAPI.GSS_C_NT_HOSTBASED_SERVICE, oidstr.pointer)
+      #   oidstr[:value].read_string
+      attach_function :gss_oid_to_str, [:pointer, :pointer, :pointer], :OM_uint32
+
       # OM_uint32 gss_str_to_oid(OM_uint32 *minor_status, const gss_buffer_t oid_str, gss_OID *oid);
       # @example: Simulate GSS_C_NT_HOSTBASED_SERVICE
       #   min_stat = FFI::MemoryPointer.new :OM_uint32
@@ -271,7 +271,7 @@ module GSSAPI
       #   oid = GSSAPI::LibGSSAPI::GssOID.new(oid.get_pointer(0))
       attach_function :gss_str_to_oid, [:pointer, :pointer, :pointer], :OM_uint32
     rescue FFI::NotFoundError => ex
-      warn "WARNING: Could not load gss_str_to_oid method. Check your GSSAPI C library for an update"
+      warn "WARNING: Could not load OID conversion methods. Check your GSSAPI C library for an update"
     end
 
     # OM_uint32  gss_init_sec_context(OM_uint32  *  minor_status, const gss_cred_id_t initiator_cred_handle,
