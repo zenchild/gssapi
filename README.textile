@@ -8,3 +8,9 @@ p. I'm going to try and maintain most of the docs in the Github WIKI for this pr
 https://github.com/zenchild/gssapi/wiki
 
 p. Also check out the examples directory for some stubbed out client/server examples.
+
+
+h4. License
+
+Copyright © 2010 Dan Wanek <dan.wanek@gmail.com>
+Ruby gssapi is licensed under the MIT license (see COPYING)
