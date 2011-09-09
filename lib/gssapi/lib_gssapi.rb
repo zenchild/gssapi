@@ -393,7 +393,9 @@ module GSSAPI
 
 
     # GSSAPI Status & Error Codes
-    GSS_S_COMPLETE = 0
+    GSS_S_COMPLETE  = 0
+    GSS_C_GSS_CODE  = 1
+    GSS_C_MECH_CODE = 2
 
     GSS_C_CALLING_ERRORS = {
       (1 << GSS_C_CALLING_ERROR_OFFSET) => "GSS_S_CALL_INACCESSIBLE_READ",
@@ -455,10 +457,6 @@ module GSSAPI
     GSS_C_NO_CONTEXT        = FFI::Pointer.new(:pointer, 0) # ((gss_ctx_id_t) 0)
     GSS_C_NO_CREDENTIAL     = FFI::Pointer.new(:pointer, 0) # ((gss_cred_id_t) 0)
     GSS_C_NO_CHANNEL_BINDINGS = FFI::Pointer.new(:pointer, 0) # ((gss_channel_bindings_t) 0)
-
-    GSS_C_GSS_CODE = 1
-    GSS_C_MECH_CODE = 2
-
     GSS_C_EMPTY_BUFFER      = ManagedGssBufferDesc.new
 
   end #end LibGSSAPI
