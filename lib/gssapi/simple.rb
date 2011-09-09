@@ -48,7 +48,7 @@ module GSSAPI
       mech = LibGSSAPI::GssOID.gss_c_no_oid
       #mech = LibGSSAPI.GSS_C_NT_HOSTBASED_SERVICE
       name = FFI::MemoryPointer.new :pointer # gss_name_t
-      min_stat = FFI::MemoryPointer.new :uint32
+      min_stat = FFI::MemoryPointer.new :OM_uint32
 
       maj_stat = LibGSSAPI.gss_import_name(min_stat, buff_str.pointer, mech, name)
       raise GssApiError.new(maj_stat, min_stat), "gss_import_name did not return GSS_S_COMPLETE" if maj_stat != 0
@@ -67,7 +67,7 @@ module GSSAPI
     # @return [String, true] if a continuation flag is set it will return the output token that is needed to send
     #   to the remote host.  Otherwise it returns true and the GSS security context has been established.
     def init_context(in_token = nil, opts = {})
-      min_stat = FFI::MemoryPointer.new :uint32
+      min_stat = FFI::MemoryPointer.new :OM_uint32
       ctx = (@context.nil? ? LibGSSAPI::GssCtxIdT.gss_c_no_context.address_of : @context.address_of)
       mech = LibGSSAPI::GssOID.gss_c_no_oid
       if(opts[:flags])
@@ -80,7 +80,7 @@ module GSSAPI
       in_tok = LibGSSAPI::UnManagedGssBufferDesc.new
       in_tok.value = in_token
       out_tok = LibGSSAPI::ManagedGssBufferDesc.new
-      ret_flags = FFI::MemoryPointer.new :uint32
+      ret_flags = FFI::MemoryPointer.new :OM_uint32
 
 
       maj_stat = LibGSSAPI.gss_init_sec_context(min_stat,
@@ -111,7 +111,7 @@ module GSSAPI
     def accept_context(in_token)
       raise GssApiError, "No credentials yet acquired. Call #{self.class.name}#acquire_credentials first" if @scred.nil?
 
-      min_stat = FFI::MemoryPointer.new :uint32
+      min_stat = FFI::MemoryPointer.new :OM_uint32
       ctx = (@context.nil? ? LibGSSAPI::GssCtxIdT.gss_c_no_context.address_of : @context.address_of)
       no_chn_bind = LibGSSAPI::GSS_C_NO_CHANNEL_BINDINGS
       client = FFI::MemoryPointer.new :pointer  # Will hold the initiating client name after the call
@@ -119,7 +119,7 @@ module GSSAPI
       in_tok = GSSAPI::LibGSSAPI::UnManagedGssBufferDesc.new
       in_tok.value = in_token
       out_tok = GSSAPI::LibGSSAPI::ManagedGssBufferDesc.new
-      ret_flags = FFI::MemoryPointer.new :uint32
+      ret_flags = FFI::MemoryPointer.new :OM_uint32
 
       maj_stat = LibGSSAPI.gss_accept_sec_context(min_stat,
                                                   ctx,
@@ -146,7 +146,7 @@ module GSSAPI
     # @return [true] It will return true if everything succeeds and the @scred variable will be set for future methods. If
     #   an error ocurrs an exception will be raised.
     def acquire_credentials(princ = @int_svc_name, opts = {:usage => :accept})
-      min_stat = FFI::MemoryPointer.new :uint32
+      min_stat = FFI::MemoryPointer.new :OM_uint32
       scred = FFI::MemoryPointer.new :pointer
 
       case opts[:usage]
@@ -172,12 +172,12 @@ module GSSAPI
     # @param [Boolean] encrypt Whether or not to encrypt the message or just sign it.  The default is to encrypt.
     # @return [String] The wrapped message. It will raise an exception on error
     def wrap_message(msg, encrypt = true)
-      min_stat = FFI::MemoryPointer.new :uint32
+      min_stat = FFI::MemoryPointer.new :OM_uint32
       conf_req = (encrypt ? 1 : 0)
       qop_req = GSSAPI::LibGSSAPI::GSS_C_QOP_DEFAULT
       in_buff = GSSAPI::LibGSSAPI::UnManagedGssBufferDesc.new
       in_buff.value = msg
-      conf_state = FFI::MemoryPointer.new :uint32
+      conf_state = FFI::MemoryPointer.new :OM_uint32
       out_buff = GSSAPI::LibGSSAPI::ManagedGssBufferDesc.new
       maj_stat = GSSAPI::LibGSSAPI.gss_wrap(min_stat, @context, conf_req, qop_req, in_buff.pointer, conf_state, out_buff.pointer)
       raise GssApiError.new(maj_stat, min_stat), "Failed to gss_wrap message" if maj_stat != 0
@@ -188,13 +188,13 @@ module GSSAPI
     # @param [String] msg The message to unwrap
     # @param [Boolean] encrypted Whether or not this message was encrypted (true) or just signed (false)
     def unwrap_message(msg, encrypted = true)
-      min_stat = FFI::MemoryPointer.new :uint32
+      min_stat = FFI::MemoryPointer.new :OM_uint32
       in_buff = GSSAPI::LibGSSAPI::UnManagedGssBufferDesc.new
       in_buff.value = msg
       out_buff = GSSAPI::LibGSSAPI::ManagedGssBufferDesc.new
       conf_state = FFI::MemoryPointer.new :int
       conf_state.write_int((encrypted ? 1 : 0))
-      q_op = FFI::MemoryPointer.new :uint32
+      q_op = FFI::MemoryPointer.new :OM_uint32
       q_op.write_int(0)
       maj_stat = GSSAPI::LibGSSAPI.gss_unwrap(min_stat, @context, in_buff.pointer, out_buff.pointer, conf_state, q_op)
       raise GssApiError.new(maj_stat, min_stat), "Failed to gss_unwrap message" if maj_stat != 0

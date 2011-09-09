@@ -24,10 +24,10 @@ module GSSAPI
     # Libc functions
 
     # void *malloc(size_t size);
-    attach_function :malloc, [:uint32], :pointer
+    attach_function :malloc, [:size_t], :pointer
 
     # void *memcpy(void *dest, const void *src, size_t n);
-    attach_function :memcpy, [:pointer, :pointer, :uint32], :pointer
+    attach_function :memcpy, [:pointer, :pointer, :size_t], :pointer
 
     typedef :uint32, :OM_uint32
 
@@ -72,8 +72,8 @@ module GSSAPI
     module GssBufferDescLayout
       def self.included(base)
         base.class_eval do
-          layout :length => :size_t,
-            :value  => :pointer # pointer of :void
+          layout :length => :OM_uint32,
+            :value => :pointer # pointer of :void
 
           def length
             self[:length]
@@ -122,7 +122,7 @@ module GSSAPI
         elsif(val.is_a?(Fixnum))
           buff = FFI::MemoryPointer.new :OM_uint32
           buff.write_int val
-          self[:length] = val.to_s.length
+          self[:length] = FFI::type_size :OM_uint32
           self[:value] = buff
         else
           raise StandardError, "Can't handle type #{val.class.name}"
@@ -349,6 +349,8 @@ module GSSAPI
     # OM_uint32 krb5_gss_register_acceptor_identity(const char *);
     attach_function :krb5_gss_register_acceptor_identity, [:string], :OM_uint32
 
+    # OM_uint32 gss_display_status(OM_uint32 *minor_status, OM_uint32 status_value, int status_type, gss_OID mech_type, OM_uint32 *message_context, gss_buffer_t status_string)
+    attach_function :gss_display_status, [:pointer, :OM_uint32, :int, :pointer, :pointer, :pointer], :OM_uint32
 
     # Variable definitions
     # --------------------
