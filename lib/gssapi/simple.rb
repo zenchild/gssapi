@@ -51,7 +51,7 @@ module GSSAPI
       min_stat = FFI::MemoryPointer.new :uint32
 
       maj_stat = LibGSSAPI.gss_import_name(min_stat, buff_str.pointer, mech, name)
-      raise GssApiError, "gss_import_name did not return GSS_S_COMPLETE.  Error code: maj: #{maj_stat}, min: #{min_stat.read_int}" if maj_stat != 0
+      raise GssApiError.new(maj_stat, min_stat), "gss_import_name did not return GSS_S_COMPLETE" if maj_stat != 0
 
       LibGSSAPI::GssNameT.new(name.get_pointer(0))
     end
@@ -97,7 +97,7 @@ module GSSAPI
                                                 ret_flags,
                                                 nil)
 
-      raise GssApiError, "gss_init_sec_context did not return GSS_S_COMPLETE.  Error code: maj: #{maj_stat}, min: #{min_stat.read_int}" if maj_stat > 1
+      raise GssApiError.new(maj_stat, min_stat), "gss_init_sec_context did not return GSS_S_COMPLETE" if maj_stat > 1
       
       @context = LibGSSAPI::GssCtxIdT.new(ctx.get_pointer(0))
       maj_stat == 1 ? out_tok.value : true
@@ -132,7 +132,7 @@ module GSSAPI
                                                   ret_flags,
                                                   nil, nil)
 
-      raise GssApiError, "gss_accept_sec_context did not return GSS_S_COMPLETE.  Error code: maj: #{maj_stat}, min: #{min_stat.read_int}" if maj_stat > 1
+      raise GssApiError.new(maj_stat, min_stat), "gss_accept_sec_context did not return GSS_S_COMPLETE" if maj_stat > 1
 
       @context = LibGSSAPI::GssCtxIdT.new(ctx.get_pointer(0))
       out_tok.length > 0 ? out_tok.value : true
@@ -161,7 +161,7 @@ module GSSAPI
       end
 
       maj_stat = LibGSSAPI.gss_acquire_cred(min_stat, princ, 0, LibGSSAPI::GSS_C_NO_OID_SET, usage, scred, nil, nil)
-      raise GssApiError, "gss_acquire_cred did not return GSS_S_COMPLETE.  Error code: maj: #{maj_stat}, min: #{min_stat.read_int}" if maj_stat != 0
+      raise GssApiError.new(maj_stat, min_stat), "gss_acquire_cred did not return GSS_S_COMPLETE" if maj_stat != 0
 
       @scred = LibGSSAPI::GssCredIdT.new(scred.get_pointer(0))
       true
@@ -180,7 +180,7 @@ module GSSAPI
       conf_state = FFI::MemoryPointer.new :uint32
       out_buff = GSSAPI::LibGSSAPI::ManagedGssBufferDesc.new
       maj_stat = GSSAPI::LibGSSAPI.gss_wrap(min_stat, @context, conf_req, qop_req, in_buff.pointer, conf_state, out_buff.pointer)
-      raise GssApiError, "Failed to gss_wrap message. Error code: maj: #{maj_stat}, min: #{min_stat.read_int}" if maj_stat != 0
+      raise GssApiError.new(maj_stat, min_stat), "Failed to gss_wrap message" if maj_stat != 0
       out_buff.value
     end
 
@@ -197,7 +197,7 @@ module GSSAPI
       q_op = FFI::MemoryPointer.new :uint32
       q_op.write_int(0)
       maj_stat = GSSAPI::LibGSSAPI.gss_unwrap(min_stat, @context, in_buff.pointer, out_buff.pointer, conf_state, q_op)
-      raise GssApiError, "Failed to gss_unwrap message. Error code: maj: #{maj_stat}, min: #{min_stat.read_int}" if maj_stat != 0
+      raise GssApiError.new(maj_stat, min_stat), "Failed to gss_unwrap message" if maj_stat != 0
       out_buff.value
     end
 
@@ -205,7 +205,7 @@ module GSSAPI
     # @param [String] keytab the path to the keytab
     def set_keytab(keytab)
       maj_stat = LibGSSAPI.krb5_gss_register_acceptor_identity(keytab)
-      raise GssApiError, "krb5_gss_register_acceptor_identity did not return GSS_S_COMPLETE.  Error code: maj: #{maj_stat}, min: #{min_stat.read_int}" if maj_stat != 0
+      raise GssApiError.new(maj_stat, min_stat), "krb5_gss_register_acceptor_identity did not return GSS_S_COMPLETE" if maj_stat != 0
       true
     end
 
