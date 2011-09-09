@@ -13,9 +13,12 @@ module GSSAPI
 
     # Initialize a new GSSAPI::Simple object
     # @param [String] host_name the fully qualified host name
-    # @param [String] service_name the service name. This can either be in the form svc@example.org 
-    #   or just svc.  If there is no '@example.org' part the host_name will be appended. If no
-    #   service_name is given at all the default service of 'host' will be used.
+    # @param [String] service_name The service name. This can either be a
+    #   GSS_KRB5_NT_PRINCIPAL_NAME in the form of srvc/fqdn@REALM
+    #   or
+    #   GSS_C_NT_HOSTBASED_SERVICE in the form of srvc@fqdn
+    #   If there is no '@fqdn' part, the host_name will be appended.
+    #   If no service_name is given at all the default service of 'host@fqdn' will be used.
     def initialize(host_name, service_name=nil, keytab=nil)
       @host = host_name
       @service = service_name.nil? ? "host@#{@host}" : (service_name.include?('@') ? service_name : "#{service_name}@#{@host}")
