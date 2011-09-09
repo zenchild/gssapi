@@ -402,11 +402,11 @@ module GSSAPI
     }
 
     GSS_C_SUPPLEMENTARY_CODES = {
-			(1 << (GSS_C_SUPPLEMENTARY_OFFSET + 0)) => "GSS_S_CONTINUE_NEEDED",
-			(1 << (GSS_C_SUPPLEMENTARY_OFFSET + 1)) => "GSS_S_DUPLICATE_TOKEN",
-			(1 << (GSS_C_SUPPLEMENTARY_OFFSET + 2)) => "GSS_S_OLD_TOKEN",
-			(1 << (GSS_C_SUPPLEMENTARY_OFFSET + 3)) => "GSS_S_UNSEQ_TOKEN",
-			(1 << (GSS_C_SUPPLEMENTARY_OFFSET + 4)) => "GSS_S_GAP_TOKEN"
+      (1 << (GSS_C_SUPPLEMENTARY_OFFSET + 0)) => "GSS_S_CONTINUE_NEEDED",
+      (1 << (GSS_C_SUPPLEMENTARY_OFFSET + 1)) => "GSS_S_DUPLICATE_TOKEN",
+      (1 << (GSS_C_SUPPLEMENTARY_OFFSET + 2)) => "GSS_S_OLD_TOKEN",
+      (1 << (GSS_C_SUPPLEMENTARY_OFFSET + 3)) => "GSS_S_UNSEQ_TOKEN",
+      (1 << (GSS_C_SUPPLEMENTARY_OFFSET + 4)) => "GSS_S_GAP_TOKEN"
     }
 
     GSS_C_ROUTINE_ERRORS = {
@@ -433,10 +433,10 @@ module GSSAPI
 
     # IOV Buffer Types (gssapi_ext.h)
     GSS_IOV_BUFFER_TYPE_EMPTY       = 0
-    GSS_IOV_BUFFER_TYPE_DATA        = 1	 # Packet data
-    GSS_IOV_BUFFER_TYPE_HEADER      = 2  # Mechanism header
-    GSS_IOV_BUFFER_TYPE_MECH_PARAMS = 3	 # Mechanism specific parameters
-    GSS_IOV_BUFFER_TYPE_TRAILER     = 7	 # Mechanism trailer
+    GSS_IOV_BUFFER_TYPE_DATA        = 1 # Packet data
+    GSS_IOV_BUFFER_TYPE_HEADER      = 2 # Mechanism header
+    GSS_IOV_BUFFER_TYPE_MECH_PARAMS = 3 # Mechanism specific parameters
+    GSS_IOV_BUFFER_TYPE_TRAILER     = 7 # Mechanism trailer
     GSS_IOV_BUFFER_TYPE_PADDING     = 9  # Padding
     GSS_IOV_BUFFER_TYPE_STREAM      = 10 # Complete wrap token
     GSS_IOV_BUFFER_TYPE_SIGN_ONLY   = 11 # Sign only packet data
@@ -448,13 +448,17 @@ module GSSAPI
 
 
     # Various Null values. (gssapi.h)
-		GSS_C_NO_NAME           = FFI::Pointer.new(:pointer, 0) # ((gss_name_t) 0)
-		GSS_C_NO_BUFFER         = FFI::Pointer.new(:pointer, 0) # ((gss_buffer_t) 0)
-		GSS_C_NO_OID            = FFI::Pointer.new(:pointer, 0) # ((gss_OID) 0)
-		GSS_C_NO_OID_SET        = FFI::Pointer.new(:pointer, 0) # ((gss_OID_set) 0)
-		GSS_C_NO_CONTEXT        = FFI::Pointer.new(:pointer, 0) # ((gss_ctx_id_t) 0)
-		GSS_C_NO_CREDENTIAL     = FFI::Pointer.new(:pointer, 0) # ((gss_cred_id_t) 0)
-		GSS_C_NO_CHANNEL_BINDINGS = FFI::Pointer.new(:pointer, 0) # ((gss_channel_bindings_t) 0)
+    GSS_C_NO_NAME           = FFI::Pointer.new(:pointer, 0) # ((gss_name_t) 0)
+    GSS_C_NO_BUFFER         = FFI::Pointer.new(:pointer, 0) # ((gss_buffer_t) 0)
+    GSS_C_NO_OID            = FFI::Pointer.new(:pointer, 0) # ((gss_OID) 0)
+    GSS_C_NO_OID_SET        = FFI::Pointer.new(:pointer, 0) # ((gss_OID_set) 0)
+    GSS_C_NO_CONTEXT        = FFI::Pointer.new(:pointer, 0) # ((gss_ctx_id_t) 0)
+    GSS_C_NO_CREDENTIAL     = FFI::Pointer.new(:pointer, 0) # ((gss_cred_id_t) 0)
+    GSS_C_NO_CHANNEL_BINDINGS = FFI::Pointer.new(:pointer, 0) # ((gss_channel_bindings_t) 0)
+
+    GSS_C_GSS_CODE = 1
+    GSS_C_MECH_CODE = 2
+
     GSS_C_EMPTY_BUFFER      = ManagedGssBufferDesc.new
 
   end #end LibGSSAPI
