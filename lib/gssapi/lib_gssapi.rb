@@ -29,8 +29,6 @@ module GSSAPI
     # void *memcpy(void *dest, const void *src, size_t n);
     attach_function :memcpy, [:pointer, :pointer, :size_t], :pointer
 
-    typedef :uint32, :OM_uint32
-
     class GssOID < FFI::Struct
       layout  :length   =>  :OM_uint32,
         :elements => :pointer # pointer of :void
