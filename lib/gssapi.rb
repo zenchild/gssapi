@@ -7,6 +7,7 @@ require 'ffi'
 module GSSAPI
   module LibGSSAPI
     extend FFI::Library
+    FFI::add_typedef(:uint32, :OM_uint32)
 
     GSSAPI_LIB_TYPE = :mit unless defined?(GSSAPI_LIB_TYPE)
   end
