@@ -31,8 +31,12 @@ module GSSAPI
     def import_name(str)
       buff_str = LibGSSAPI::UnManagedGssBufferDesc.new
       buff_str.value = str
-      mech = LibGSSAPI::GssOID.gss_c_no_oid
-      #mech = LibGSSAPI.GSS_C_NT_HOSTBASED_SERVICE
+      # Choose the appropriate mechanism based on the string passed.
+      if (str =~ /[A-Za-z0-9]+\/[^@]+@.+$/)
+        mech = LibGSSAPI::GssOID.gss_c_no_oid
+      else
+        mech = LibGSSAPI.GSS_C_NT_HOSTBASED_SERVICE
+      end
       name = FFI::MemoryPointer.new :pointer # gss_name_t
       min_stat = FFI::MemoryPointer.new :OM_uint32
 
