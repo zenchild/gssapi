@@ -188,11 +188,7 @@ module GSSAPI
     class GssCtxIdT < GssPointer
       def self.release_ptr(context_ptr)
         min_stat = FFI::MemoryPointer.new :OM_uint32
-        # FIXME: change to GSS_C_NO_BUFFER
-        empty_buff = LibGSSAPI::UnManagedGssBufferDesc.new
-        empty_buff[:length] = 0
-        empty_buff[:value] = nil
-        maj_stat = LibGSSAPI.gss_delete_sec_context(min_stat, context_ptr, empty_buff.pointer)
+        maj_stat = LibGSSAPI.gss_delete_sec_context(min_stat, context_ptr, LibGSSAPI::GSS_C_NO_BUFFER)
       end
 
       def self.gss_c_no_context
