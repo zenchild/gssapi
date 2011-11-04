@@ -29,7 +29,9 @@ module GSSAPI
       end
       ffi_lib GSSAPI_LIB, FFI::Library::LIBC
     when /mswin|mingw32|windows/
-      ffi_lib 'gssapi32'  # Required the MIT Kerberos libraries to be installed
+	  # Pull the gssapi32 path from the environment if it exist, otherwise use the default in Program Files
+	  gssapi32_path = ENV['gssapi32'] ? ENV['gssapi32'] : 'C:\Program Files (x86)\MIT\Kerberos\bin\gssapi32.dll'
+      ffi_lib gssapi32_path, FFI::Library::LIBC  # Required the MIT Kerberos libraries to be installed
       ffi_convention :stdcall
     else
       raise LoadError, "This platform (#{RUBY_PLATFORM}) is not supported by ruby gssapi."
