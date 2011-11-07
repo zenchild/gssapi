@@ -18,7 +18,7 @@ module GSSAPI
       when :heimdal
         GSSAPI_LIB = 'libgssapi.so.2'
       end
-      ffi_lib GSSAPI_LIB, FFI::Library::LIBC
+    ffi_lib GSSAPI_LIB, FFI::Library::LIBC
     when /darwin/
       case GSSAPI_LIB_TYPE
       when :mit
@@ -27,10 +27,10 @@ module GSSAPI
         # use Heimdal Kerberos since Mac MIT Kerberos is OLD. Do a "require 'gssapi/heimdal'" first
         GSSAPI_LIB = '/usr/heimdal/lib/libgssapi.dylib'
       end
-      ffi_lib GSSAPI_LIB, FFI::Library::LIBC
+    ffi_lib GSSAPI_LIB, FFI::Library::LIBC
     when /mswin|mingw32|windows/
-	  # Pull the gssapi32 path from the environment if it exist, otherwise use the default in Program Files
-	  gssapi32_path = ENV['gssapi32'] ? ENV['gssapi32'] : 'C:\Program Files (x86)\MIT\Kerberos\bin\gssapi32.dll'
+      # Pull the gssapi32 path from the environment if it exist, otherwise use the default in Program Files
+      gssapi32_path = ENV['gssapi32'] ? ENV['gssapi32'] : 'C:\Program Files (x86)\MIT\Kerberos\bin\gssapi32.dll'
       ffi_lib gssapi32_path, FFI::Library::LIBC  # Required the MIT Kerberos libraries to be installed
       ffi_convention :stdcall
     else
