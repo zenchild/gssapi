@@ -9,14 +9,13 @@ keytab = "#{ENV['HOME']}/.gssapi/krb5.keytab"  # this is optional, but probably 
 
 tcpsrv = TCPServer.new(host, 8082)
 
-srv = GSSAPI::Simple.new(host, service, keytab)
-srv.acquire_credentials
-
 loop do
   Thread.start(tcpsrv.accept) do |s|
     print(s, "Accepted Connection\n")
     stok = s.gets.chomp
     print(s, "Received string#{stok}\n")
+    srv = GSSAPI::Simple.new(host, service, keytab)
+    srv.acquire_credentials
     otok = srv.accept_context(Base64.strict_decode64(stok.chomp))
     s.write("#{Base64.strict_encode64(otok)}\n")
 
