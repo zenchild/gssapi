@@ -7,8 +7,8 @@ module GSSAPI
   module LibGSSAPI
 
     class GssOID < FFI::Struct
-      layout  :length   =>  :OM_uint32,
-        :elements => :pointer # pointer of :void
+      layout  :length, :OM_uint32,
+        :elements, :pointer # pointer of :void
 
       def self.gss_c_no_oid
         self.new(GSSAPI::LibGSSAPI::GSS_C_NO_OID)

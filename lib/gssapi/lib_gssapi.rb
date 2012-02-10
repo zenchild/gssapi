@@ -47,8 +47,8 @@ module GSSAPI
     module GssBufferDescLayout
       def self.included(base)
         base.class_eval do
-          layout :length => :OM_uint32,
-            :value => :pointer # pointer of :void
+          layout :length, :OM_uint32,
+            :value, :pointer # pointer of :void
 
           def length
             self[:length]
@@ -133,16 +133,16 @@ module GSSAPI
     #   iov_buff[:buffer][:length] = str.size
     #   iov_buff[:buffer][:value] = str
     class GssIOVBufferDesc < FFI::Struct
-      layout  :type   => :OM_uint32,
-              :buffer => UnManagedGssBufferDesc
+      layout :type, :OM_uint32,
+        :buffer, UnManagedGssBufferDesc
     end
 
     class GssChannelBindingsStruct < FFI::Struct
-      layout  :initiator_addrtype => :OM_uint32,
-        :initiator_address  => UnManagedGssBufferDesc,
-        :acceptor_addrtype  => :OM_uint32,
-        :acceptor_address   => UnManagedGssBufferDesc,
-        :application_data   => UnManagedGssBufferDesc
+      layout :initiator_addrtype, :OM_uint32,
+        :initiator_address, UnManagedGssBufferDesc,
+        :acceptor_addrtype, :OM_uint32,
+        :acceptor_address, UnManagedGssBufferDesc,
+        :application_data, UnManagedGssBufferDesc
 
       no_chn_bind = FFI::MemoryPointer.new :pointer  #
       no_chn_bind.write_int 0
