@@ -38,7 +38,7 @@ module GSSAPI
       if (str =~ /[A-Za-z0-9]+\/[^@]+@.+$/)
         mech = LibGSSAPI::GssOID.gss_c_no_oid
       else
-        mech = LibGSSAPI.GSS_C_NT_HOSTBASED_SERVICE
+        mech = LibGSSAPI::GSS_C_NT_HOSTBASED_SERVICE
       end
       name = FFI::MemoryPointer.new :pointer # gss_name_t
       min_stat = FFI::MemoryPointer.new :OM_uint32

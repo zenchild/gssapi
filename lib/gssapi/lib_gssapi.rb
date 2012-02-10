@@ -15,15 +15,6 @@ module GSSAPI
     # void *memcpy(void *dest, const void *src, size_t n);
     attach_function :memcpy, [:pointer, :pointer, :size_t], :pointer
 
-    class GssOID < FFI::Struct
-      layout  :length   =>  :OM_uint32,
-        :elements => :pointer # pointer of :void
-
-      def self.gss_c_no_oid
-        self.new(GSSAPI::LibGSSAPI::GSS_C_NO_OID)
-      end
-    end
-
     # This is a generic Managed Struct subclass that hides the [] methods.
     # Classes that implement this class should provide accessor methods to get to the attributes.
     class GssMStruct < FFI::ManagedStruct
@@ -199,6 +190,7 @@ module GSSAPI
     # gss_cred_id_t
     class GssCredIdT < GssPointer
       def self.release_ptr(cred_ptr)
+        puts "Releasing gss_cred_id_t at #{cred_ptr.address.to_s(16)}" if $DEBUG
         min_stat = FFI::MemoryPointer.new :OM_uint32
         maj_stat = LibGSSAPI.gss_release_cred(min_stat, cred_ptr)
       end
@@ -334,9 +326,6 @@ module GSSAPI
 
     # Variable definitions
     # --------------------
-
-    attach_variable :GSS_C_NT_HOSTBASED_SERVICE, :pointer # type gss_OID
-    attach_variable :GSS_C_NT_EXPORT_NAME, :pointer # type gss_OID
 
     # Flag bits for context-level services.
     GSS_C_DELEG_FLAG        = 1
