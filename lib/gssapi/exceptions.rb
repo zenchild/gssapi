@@ -11,6 +11,14 @@ module GSSAPI
     def message; to_s + ": " + @s; end
 
     def initialize(maj_stat = nil, min_stat = nil)
+
+      # If raised as class (raise GssApiError, "msg) the error message is given
+      # as the first parameter.
+      if maj_stat.class == String
+        @s = maj_stat
+        return super maj_stat
+      end
+
       if(maj_stat.nil? && min_stat.nil?)
         @s = '(no error info)'
       else
