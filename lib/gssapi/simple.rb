@@ -107,7 +107,7 @@ module GSSAPI
       min_stat = FFI::MemoryPointer.new :OM_uint32
       ctx = (@context.nil? ? LibGSSAPI::GssCtxIdT.gss_c_no_context.address_of : @context.address_of)
       no_chn_bind = LibGSSAPI::GSS_C_NO_CHANNEL_BINDINGS
-      client = FFI::MemoryPointer.new :pointer  # Will hold the initiating client name after the call
+      @client = FFI::MemoryPointer.new :pointer  # Will hold the initiating client name after the call
       mech = FFI::MemoryPointer.new :pointer  # Will hold the mech being used after the call
       in_tok = GSSAPI::LibGSSAPI::UnManagedGssBufferDesc.new
       in_tok.value = in_token
@@ -119,7 +119,7 @@ module GSSAPI
                                                   @scred,
                                                   in_tok.pointer,
                                                   no_chn_bind,
-                                                  client,
+                                                  @client,
                                                   mech,
                                                   out_tok.pointer,
                                                   ret_flags,
@@ -131,6 +131,26 @@ module GSSAPI
       out_tok.length > 0 ? out_tok.value : true
     end
 
+    # Get textual representation of internal GSS name
+    # @return [String] textual representation of internal GSS name
+    def display_name
+      raise GssApiError.new(), "No context accepted yet. Call #{self.class.name}#accept_context(in_token) first" if @client.nil?
+
+      output_name = GSSAPI::LibGSSAPI::ManagedGssBufferDesc.new
+
+      min_stat = FFI::MemoryPointer.new :OM_uint32
+      maj_stat = LibGSSAPI.gss_display_name(min_stat,
+                                            @client.get_pointer(0),
+                                            output_name.pointer,
+                                            nil)
+
+      if maj_stat != GSSAPI::LibGSSAPI::GSS_S_COMPLETE
+        raise GssApiError.new(maj_stat, min_stat),
+          "gss_display_name did not return GSS_S_COMPLETE but #{ maj_stat }"
+      end
+
+      output_name.value
+    end
 
     # Acquire security credentials. This does not log you in. It grabs the credentials from a cred cache or keytab.
     # @param [Hash] opts options to pass to the gss_acquire_cred function.
