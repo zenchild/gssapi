@@ -257,6 +257,9 @@ module GSSAPI
     #   gss_buffer_t output_token, OM_uint32 *ret_flags, OM_uint32 *time_rec, gss_cred_id_t *delegated_cred_handle);
     attach_function :gss_accept_sec_context, [:pointer, :pointer, :pointer, :pointer, :pointer, :pointer, :pointer, :pointer, :pointer, :pointer, :pointer], :OM_uint32
 
+    # OM_uint32 gss_display_name(OM_uint32 * minor_status, gss_name_t input_name, gss_buffer_t output_name_buffer, gss_OID * output_name_type);
+    attach_function :gss_display_name, [:pointer, :pointer, :pointer, :pointer], :OM_uint32
+
     # OM_uint32 gss_acquire_cred(OM_uint32 *minor_status, const gss_name_t desired_name, OM_uint32 time_req, const gss_OID_set desired_mechs,
     #   gss_cred_usage_t cred_usage, gss_cred_id_t *output_cred_handle, gss_OID_set *actual_mechs, OM_uint32 *time_rec);
     attach_function :gss_acquire_cred, [:pointer, :pointer, :OM_uint32, :pointer, :OM_uint32, :pointer, :pointer, :pointer], :OM_uint32
