@@ -131,6 +131,20 @@ module GSSAPI
       out_tok.length > 0 ? out_tok.value : true
     end
 
+
+    def get_mic(token)
+
+      min_stat = FFI::MemoryPointer.new :OM_uint32
+      qop_req = GSSAPI::LibGSSAPI::GSS_C_QOP_DEFAULT
+      in_buff = GSSAPI::LibGSSAPI::UnManagedGssBufferDesc.new
+      in_buff.value = token
+      out_buff = GSSAPI::LibGSSAPI::ManagedGssBufferDesc.new
+      maj_stat = GSSAPI::LibGSSAPI.gss_get_mic(min_stat, @context, qop_req, in_buff.pointer, out_buff.pointer)
+      raise GssApiError.new(maj_stat, min_stat), "Failed to gss_get_mic" if maj_stat != 0
+      out_buff.value
+    end
+
+
     # Get textual representation of internal GSS name
     # @return [String] textual representation of internal GSS name
     def display_name
