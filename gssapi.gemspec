@@ -13,6 +13,7 @@ Gem::Specification.new do |gem|
   gem.author = "Dan Wanek"
   gem.email = "dan.wanek@gmail.com"
   gem.homepage = "http://github.com/zenchild/gssapi"
+  gem.license = "MIT"
 
   gem.summary = "A FFI wrapper around the system GSSAPI library."
   gem.description	= <<-EOF
