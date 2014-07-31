@@ -158,7 +158,7 @@ module GSSAPI
 
       def self.release(ptr)
         if( ptr.address == 0 )
-          puts "NULL POINTER: Not freeing" if $DEBUG
+          puts "Releasing #{self.name} NULL POINTER: Not freeing" if $DEBUG
           return
         else
           puts "Releasing #{self.name} at #{ptr.address.to_s(16)}" if $DEBUG
