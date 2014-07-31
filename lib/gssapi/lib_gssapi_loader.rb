@@ -21,8 +21,10 @@ module GSSAPI
       case host_os
       when /linux/
         gssapi_lib = 'libgssapi_krb5.so.2'
+        ffi_lib gssapi_lib, FFI::Library::LIBC
       when /darwin/
         gssapi_lib = '/usr/lib/libgssapi_krb5.dylib'
+        ffi_lib gssapi_lib, FFI::Library::LIBC
       when /mswin|mingw32|windows/
         # Pull the gssapi32 path from the environment if it exist, otherwise use the default in Program Files
         gssapi32_path = ENV['gssapi32'] ? ENV['gssapi32'] : 'C:\Program Files (x86)\MIT\Kerberos\bin\gssapi32.dll'
@@ -31,7 +33,6 @@ module GSSAPI
       else
         raise LoadError, "This host OS (#{host_os}) is not supported by ruby gssapi and the MIT libraries."
       end
-      ffi_lib gssapi_lib, FFI::Library::LIBC
 
       # -------------------- MIT Specifics --------------------
       attach_variable :__GSS_C_NT_HOSTBASED_SERVICE, :GSS_C_NT_HOSTBASED_SERVICE, :pointer # type gss_OID
