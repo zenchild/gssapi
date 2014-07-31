@@ -330,6 +330,9 @@ module GSSAPI
     # OM_uint32 gss_display_status(OM_uint32 *minor_status, OM_uint32 status_value, int status_type, gss_OID mech_type, OM_uint32 *message_context, gss_buffer_t status_string)
     attach_function :gss_display_status, [:pointer, :OM_uint32, :int, :pointer, :pointer, :pointer], :OM_uint32
 
+    # OM_uint32 gss_krb5_copy_ccache(OM_uint32 *minor_status, gss_cred_id_t cred_handle, krb5_ccache out_ccache)
+    attach_function :gss_krb5_copy_ccache, [:pointer, :pointer, :pointer], :OM_uint32
+
     # Variable definitions
     # --------------------
 
