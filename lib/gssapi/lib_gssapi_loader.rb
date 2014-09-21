@@ -61,7 +61,7 @@ module GSSAPI
       LibGSSAPI.const_set("GSS_C_NT_EXPORT_NAME", FFI::Pointer.new(__gss_c_nt_export_name_oid_desc.to_ptr))
     end
 
-    # Heimdal supported the *_iov functions befor MIT did so in some OS distributions if
+    # Heimdal supported the *_iov functions before MIT did so in some OS distributions if
     # you need IOV support and MIT does not provide it try the Heimdal libs and then
     # before doing a "require 'gssapi'" do a "require 'gssapi/heimdal'" and that will attempt
     # to load the Heimdal libs
