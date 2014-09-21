@@ -4,9 +4,9 @@ $:.unshift lib unless $:.include?(lib)
 require 'date'
 
 Gem::Specification.new do |gem|
-  gem.name = "gssapi"
-  gem.version = File.open('VERSION').readline.chomp
-  gem.date		= Date.today.to_s
+  gem.name     = "gssapi"
+  gem.version  = File.open('VERSION').readline.chomp
+  gem.date     = Date.today.to_s
   gem.platform = Gem::Platform::RUBY
   gem.rubyforge_project  = nil
 

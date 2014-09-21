@@ -1,5 +1,6 @@
 require "bundler/gem_tasks"
 
+desc "Open a Pry Console"
 task :console do
   require "pry"
   require "pathname"
