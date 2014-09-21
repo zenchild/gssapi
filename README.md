@@ -11,6 +11,11 @@ https://github.com/zenchild/gssapi/wiki
 Also check out the examples directory for some stubbed out client/server examples.
 
 
+## Note on IOV and AEAD functions
+
+If you require the IOV and AEAD functions you will have to `require "gssapi/extensions"` to gain access to them.
+
+
 #### License
 
 Copyright © 2010 Dan Wanek <dan.wanek@gmail.com>

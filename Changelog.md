@@ -9,3 +9,6 @@
 
 ## Version 1.1.2
   * add gss_get_mic
+
+## Version 1.2.0
+  * Move IOV and AEAD to gssapi/extensions.rb so it can be loaded separately when needed
