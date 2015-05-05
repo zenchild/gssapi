@@ -10,6 +10,6 @@ describe GSSAPI::LibGSSAPI::UnManagedGssBufferDesc, 'Unmanaged Buffer Test' do
     end
 
     # If we get here without any errors we should be golden
-    true.should be_true
+    expect(true).to eq(true)
   end
 end
