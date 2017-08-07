@@ -30,6 +30,8 @@ module GSSAPI
         gssapi32_path = ENV['gssapi32'] ? ENV['gssapi32'] : 'C:\Program Files (x86)\MIT\Kerberos\bin\gssapi32.dll'
         ffi_lib gssapi32_path, FFI::Library::LIBC  # Required the MIT Kerberos libraries to be installed
         ffi_convention :stdcall
+      when /solaris/
+        ffi_lib 'libgss.so', 'mech_krb5.so', FFI::Library::LIBC
       else
         raise LoadError, "This host OS (#{host_os}) is not supported by ruby gssapi and the MIT libraries."
       end
