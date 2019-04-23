@@ -47,7 +47,7 @@ module GssIOVHelpers
 
     len = str.unpack("L").first
     puts "LEN: #{len}"
-    iov_data = str.unpack("LA#{len}A*")
+    iov_data = str.unpack("La#{len}a*")
     iov0[:buffer].value = iov_data[1]
     iov1[:buffer].value = iov_data[2]
 
