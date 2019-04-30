@@ -12,3 +12,12 @@
 
 ## Version 1.2.0
   * Move IOV and AEAD to gssapi/extensions.rb so it can be loaded separately when needed
+
+## Version 1.3.0
+
+Sorry everyone that this has taken so long to go out. I don't really work much
+with GSSAPI so it hasn't been a priority for me.
+
+  * Implemented delegation and added verify_mic. Thanks @mfazekas
+  * Add loading of MIT GSS libs for solaris/smartos. Thanks @fac
+  * Fix corruption in iov_decrypt example. Thanks @Iristyle
