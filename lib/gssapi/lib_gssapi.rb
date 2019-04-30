@@ -281,6 +281,9 @@ module GSSAPI
     # OM_uint32 gss_get_mic(OM_uint32 * minor_status, const gss_ctx_id_t context_handle, gss_qop_t qop_req, const gss_buffer_t input_message_buffer, gss_buffer_t output_message_buffer)
     attach_function :gss_get_mic, [:pointer, :pointer, :OM_uint32, :pointer, :pointer], :OM_uint32
 
+    # OM_uint32 gss_verify_mic (OM_uint32          *minor_status,const gss_ctx_id_t context_handle, const gss_buffer_t message_buffer,const gss_buffer_t token_buffer, gss_qop_t          qop_state)
+    attach_function :gss_verify_mic, [:pointer, :pointer, :pointer, :pointer, :OM_uint32], :OM_uint32
+
     # OM_uint32 gss_delete_sec_context(OM_uint32 * minor_status, gss_ctx_id_t * context_handle, gss_buffer_t output_token);
     attach_function :gss_delete_sec_context, [:pointer, :pointer, :pointer], :OM_uint32
 

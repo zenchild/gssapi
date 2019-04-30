@@ -59,6 +59,7 @@ module GSSAPI
     # @option opts [Fixnum] :flags override all other flags.  If you set the :delegate option this option will override it.
     #   @see http://tools.ietf.org/html/rfc4121#section-4.1.1.1
     # @option opts [Boolean] :delegate if true set the credential delegate flag
+    #              [Credentials] :credentials set to open the context in behalf of someone (delegated_credentials)
     # @return [String, true] if a continuation flag is set it will return the output token that is needed to send
     #   to the remote host.  Otherwise it returns true and the GSS security context has been established.
     def init_context(in_token = nil, opts = {})
@@ -79,7 +80,7 @@ module GSSAPI
 
 
       maj_stat = LibGSSAPI.gss_init_sec_context(min_stat,
-                                                nil,
+                                                opts[:credentials],
                                                 pctx,
                                                 @int_svc_name,
                                                 mech,
@@ -162,6 +163,16 @@ module GSSAPI
       out_buff.value
     end
 
+    def verify_mic(token,mic)
+      min_stat = FFI::MemoryPointer.new :OM_uint32
+      in_buff = GSSAPI::LibGSSAPI::UnManagedGssBufferDesc.new
+      in_buff.value = token
+      mic_buff = GSSAPI::LibGSSAPI::UnManagedGssBufferDesc.new
+      mic_buff.value = mic
+      maj_stat = GSSAPI::LibGSSAPI.gss_verify_mic(min_stat, @context, in_buff.pointer, mic_buff.pointer, 0)
+      raise GssApiError.new(maj_stat, min_stat), "Failed to gss_verify_mic" if maj_stat != 0
+      return (maj_stat == 0)
+    end
 
     # Get textual representation of internal GSS name
     # @return [String] textual representation of internal GSS name
