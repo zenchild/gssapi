@@ -21,6 +21,23 @@ module GSSAPI
 
       if(maj_stat.nil? && min_stat.nil?)
         @s = '(no error info)'
+      elsif (min_stat.nil?)
+        min = FFI::MemoryPointer.new :OM_uint32
+        message_context = FFI::MemoryPointer.new :OM_uint32
+        @s = ''
+        oid = GssOID.gss_c_no_oid
+        message_context.write_int 0
+        begin
+          out_buff = ManagedGssBufferDesc.new
+          maj = gss_display_status(min, maj_stat, GSS_C_GSS_CODE, oid, message_context, out_buff.pointer)
+          if (maj != 0)
+            @s += "failed to retrieve GSSAPI display for status #{maj_stat}"
+            @s += " of major status #{maj_stat}\n"
+            @s += "(with major status #{maj}, minor status #{min.read_uint32}\n"
+            break
+          end
+          @s += out_buff.value.to_s + "\n"
+        end while message_context.read_int != 0
       else
         min = FFI::MemoryPointer.new :OM_uint32
         message_context = FFI::MemoryPointer.new :OM_uint32
