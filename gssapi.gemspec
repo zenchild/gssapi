@@ -31,4 +31,6 @@ Gem::Specification.new do |gem|
 
   gem.required_ruby_version	= '>= 1.8.7'
   gem.add_runtime_dependency  'ffi', '>= 1.0.1'
+
+  gem.add_development_dependency "pry-byebug"
 end
